@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+from nton.reprocessing.reprocessing_inner import determine_data, core
+
+
+def main(targets,
+         exclude_from_invalid_cmt_version,
+         context_kwargs=None,
+         ) -> None:
+    """
+    Determine data to process
+    :param targets: targets to process
+    :param exclude_from_invalid_cmt_version: if specified, exclude regions where this CMT version is not valid
+    :param context_kwargs: extra options passed on to the context
+    :return: None
+    """
+    determine_data.determine_data(
+        targets=targets,
+        exclude_from_invalid_cmt_version=exclude_from_invalid_cmt_version,
+        context_kwargs=context_kwargs,
+        keep_detectors=args.detectors,
+    )
+
+
+if __name__ == '__main__':
+    args = core.parse_args(description='Determine data to process based on current availability',
+                           include_find_args=True,
+                           include_processing_args=False,
+                           include_move_args=False,
+                           )
+    core.log_versions()
+    main(targets=args.targets,
+         exclude_from_invalid_cmt_version=args.cmt_version,
+         context_kwargs=dict(context=args.context,
+                             package=args.package,
+                             config_kwargs=args.context_kwargs,
+                             )
+         )
+    core.log.info('Determine data done, bye bye')

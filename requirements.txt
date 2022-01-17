@@ -1,0 +1,6 @@
+strax
+utilix>=0.6.6
+straxen>=1.1.0
+numba
+numpy
+pandas

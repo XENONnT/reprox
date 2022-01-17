@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+from nton.reprocessing.reprocessing_inner import validate_run, core
+
+
+def main():
+    """Move the data in so far completely done"""
+    validate_run.move_all()
+
+
+if __name__ == '__main__':
+    core.log_versions()
+    main()
+    core.log.info('Moving data is done, bye bye')

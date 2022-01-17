@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+import os
+from nton.reprocessing.reprocessing_inner import core, determine_data, submit_jobs, validate_run
+
+
+def main(targets,
+         cmt_version,
+         context_kwargs,
+         submit_only,
+         force_find,
+         ):
+    core.log.info(f'Starting workflow')
+    if not os.path.exists(core.runs_csv) or force_find:
+        core.log.info("Doing data find")
+        determine_data.determine_data(
+            targets=targets,
+            exclude_from_invalid_cmt_version=cmt_version,
+            context_kwargs=context_kwargs
+        )
+    else:
+        core.log.info(f"Using already-created runlist at {core.runs_csv}")
+    core.log.info(f'Start jobs submission')
+    submit_jobs.submit_jobs(
+        targets=targets,
+        submit_kwargs=dict(
+            context=args.context,
+            package=args.package,
+            ram=int(args.ram),
+            cpus_per_task=int(args.cpu),
+            container=f'xenonnt-{args.tag}.simg',
+            include_config=args.context_kwargs),
+        submit_only=submit_only
+    )
+    if args.move_after_workflow:
+        core.log.info(f'Move all the data to the production folder in so far it\'s finished')
+        validate_run.move_all()
+    else:
+        core.log.info(f'Data sits at {core.config["context"]["base_folder"]}')
+    core.log.info(f'All done, bye bye')
+
+
+if __name__ == '__main__':
+    args = core.parse_args(description='Run workflow to process data',
+                           include_find_args=True,
+                           include_processing_args=True,
+                           include_move_args=True,
+                           )
+    core.log_versions()
+
+    main(
+        targets=args.targets,
+        context_kwargs=dict(context=args.context,
+                            package=args.package,
+                            config_kwargs=args.context_kwargs,
+                            ),
+        cmt_version=args.cmt_version,
+        submit_only=args.submit_only,
+        force_find=args.force_find
+    )
+    core.log.warning(
+        'In order to move the data, do `bash nton/reprocessing/clean_and_move_to_production.sh`')
+    core.log.info('Workflow done, bye bye')
