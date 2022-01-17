@@ -95,7 +95,7 @@ production folder. This includes a check to see if the data was processed succes
 even if a few jobs failed (or are still running), you can safely run this command below.
 
 ```bash
-reporx-move-folders
+reprox-move-folders
 ```
 
 ### Run entire workflow (steps 1-3 in a single command) 
