@@ -107,7 +107,7 @@ class RunValidation:
 
     @staticmethod
     def _wrong_format(split_key):
-        if not len(split_key) == 3:
+        if len(split_key) != 3:
             warn(f'{split_key} is not correct format?!', UserWarning)
             return True
         return False
@@ -208,5 +208,6 @@ def move_all(
         if len(value) < 5:
             for v in value:
                 core.log.info(f'\t{v}')
-    core.log.info(f'Did {len(folders)}. Ran into '
-                  f'{sum([len(v) for v in fails.values()])} failures')
+    core.log.info(
+        f'Did {len(folders)}. Ran into {sum(len(v) for v in fails.values())} failures'
+    )
