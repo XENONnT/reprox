@@ -1,11 +1,10 @@
 """
-Run prior to building the documentation
+Run prior to building the documentation. Very ugly hack to get a testing ini file.
 """
 import subprocess
 import os
 
 pwd = os.path.abspath('.')
-print(pwd)
 folder = 'test_folder'
 file = 'doc_test.ini'
 script = f"""
@@ -18,5 +17,6 @@ result = subprocess.run(
     script,
     shell=True,
     capture_output=True)
-print(result)
+print(result.stdout)
+print(result.stderr)
 os.environ['REPROX_CONFIG'] = os.path.join(pwd, '../../', folder, file)
