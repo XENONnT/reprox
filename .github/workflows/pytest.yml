@@ -28,7 +28,7 @@ jobs:
           - python-version: 3.9
             test: coveralls
     env:
-      REPROX_CONFIG: /home/reprox/test_folder/test.ini
+      REPROX_CONFIG: /home/runner/work/reprox/reprox/test_folder/test.ini
     steps:
       # Setup and installation
       - name: Setup python
@@ -44,12 +44,6 @@ jobs:
       - name: setup test config
         run: |
           bash .github/scripts/overwrite_testing_file.sh test_folder test.ini
-      - name: test env
-        env:
-          REPROX_CONFIG: /home/reprox/test_folder/test.ini
-        run: |
-          echo $REPROX_CONFIG
-          echo $(pwd)
       # Secrets and required files
       - name: patch utilix file
         # Patch this file if we want to have access to the database

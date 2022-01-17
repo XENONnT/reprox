@@ -13,6 +13,7 @@ xenon_secrets.py
 *.h5
 strax_data
 resource_cache
+test_folder
 raw
 *.csv
 # cProfile output
