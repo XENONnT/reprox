@@ -58,7 +58,7 @@ if not os.path.exists(os.path.split(log_fn)[0]):
 
 def get_context(package=config['context']['package'],
                 context=config['context']['context'],
-                output_folder=config['context']['base_folder'],
+                output_folder=os.path.join(config['context']['base_folder'], 'strax_data'),
                 config_kwargs: typing.Union[None, dict] = None,
                 _minimum_run_number=int(config['context']['minimum_run_number']),
                 _maximum_run_number=None,
