@@ -78,6 +78,26 @@ Advanced usage
 
 Below are several more advanced use cases.
 
+Changing the defaults of processing
+-----------------------------------
+
+You might want to play with the config file that says how many resources one uses by default.
+The `\ ``reprocessing.ini`` <https://github.com/XENONnT/reprox/blob/master/reprox/reprocessing.ini>`_ file. 
+You can either change the source code of this file, or you can overwrite it as follows:
+
+.. code-block:: bash
+
+   git clone git@github.com:XENONnT/reprox.git
+   cp reprox/reprox/reprocessing.ini my_reprocessing_config.ini
+
+   # # Edit my_reprocessing_config.ini. For example using vim:
+   # vi my_reprocessing_config.ini 
+
+   # overwrite the file used using an environment variable
+   export export REPROX_CONFIG=$(pwd)/my_reprocessing_config.ini
+
+You will see that your defaults have been changed (e.g. do ``reprox-reprocess --help``\ ) reflecting the changes you made in the ``.ini`` file.
+
 Use custom config
 -----------------
 
@@ -96,10 +116,10 @@ the\ ``--context_kwargs`` argument as follows
        --cpu 2 
        --context_kwargs '{"s1_min_coincidence": 2, "s2_min_pmts": 10}'
 
-Using ``nton`` from your jupyter notebook
----------------------------------------------
+Using ``reprox`` from your jupyter notebook
+-----------------------------------------------
 
-You can also run the commands from above in a notebook.
+You can also run the commands from above in a notebook or python script.
 
 .. code-block:: python
 
@@ -134,8 +154,8 @@ instead process NV data you need to tell the scripts to also take into account t
        --ram 12000 \
        --cpu 2
 
-Using old tags
---------------
+Using tagged versions
+---------------------
 
 One might want to run with a different tag as so
 
@@ -151,9 +171,3 @@ One might want to run with a different tag as so
        --cpu 2  \
        --move-after-workflow \
        --tag 2021.12.2
-
-Changing the defaults
----------------------
-
-You might want to play with the config file that says how many resources one uses by default.
-See ``reprocessing.ini``.

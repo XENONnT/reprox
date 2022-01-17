@@ -199,9 +199,14 @@ def setup(app):
 
 def make_reference_example():
     from m2r import parse_from_file
-    examples_file = os.path.join(os.path.split(reprox.core.reprox_dir)[0], 'EXAMPLES.md')
+    this_dir = os.path.split(os.path.realpath(__file__))[0]
+    examples_file = os.path.join(this_dir,
+                                 '..',
+                                 '..',
+                                 'EXAMPLES.md')
     examples = parse_from_file(examples_file)
-    with open(os.path.join(os.path.split(os.path.realpath(__file__))[0], 'reference', 'examples.rst'), 'w') as f:
+    with open(os.path.join(this_dir,
+                           'reference', 'examples.rst'), 'w') as f:
         for l in examples:
             f.write(l)
 
