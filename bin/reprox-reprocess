@@ -7,10 +7,10 @@ def main(targets,
          cmt_version,
          context_kwargs,
          submit_only,
-         force_find,
+         skip_find,
          ):
     core.log.info('Starting workflow')
-    if not os.path.exists(core.runs_csv) or force_find:
+    if not os.path.exists(core.runs_csv) or not skip_find:
         core.log.info("Doing data find")
         find_runs.find_data(
             targets=targets,
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     args = core.parse_args(description='Run workflow to process data',
                            include_find_args=True,
                            include_processing_args=True,
-                           include_move_args=True,
+                           include_workflow_args=True,
                            )
     core.log_versions()
 
@@ -58,7 +58,7 @@ if __name__ == '__main__':
                             ),
         cmt_version=args.cmt_version,
         submit_only=args.submit_only,
-        force_find=args.force_find
+        skip_find=args.skip_find
     )
     core.log.warning(
         'In order to move the data, do `bash nton/reprocessing/clean_and_move_to_production.sh`')

@@ -78,7 +78,7 @@ def get_context(package=config['context']['package'],
 def parse_args(description='nton reprocessing on dali',
                include_find_args=False,
                include_processing_args=False,
-               include_move_args=False,
+               include_workflow_args=False,
                ):
     """Parse arguments to return to the user"""
     parser = argparse.ArgumentParser(
@@ -125,8 +125,8 @@ def parse_args(description='nton reprocessing on dali',
         parser = _include_find_args(parser)
     if include_processing_args:
         parser = _include_processing_args(parser)
-    if include_move_args:
-        parser = _include_move_args(parser)
+    if include_workflow_args:
+        parser = _include_workflow_args(parser)
 
     args = parser.parse_args()
     if hasattr(args, 'cmt_version') and args.cmt_version == 'False':
@@ -159,13 +159,19 @@ def _include_find_args(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     return parser
 
 
-def _include_move_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
-    """Add arguments for moving data to the parser"""
+def _include_workflow_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """Add arguments for running the entire workflow to the parser"""
     parser.add_argument(
         '--move-after-workflow',
         action='store_true',
         dest='move_after_workflow',
         help='After running the workflow, move the data into the production folder'
+    )
+    parser.add_argument(
+        '--skip-find',
+        action='store_true',
+        dest='skip_find',
+        help='If set, skip finding the data and just use the CSV file also previously used.'
     )
     return parser
 

@@ -25,7 +25,7 @@ if __name__ == '__main__':
     args = core.parse_args(description='Determine data to process based on current availability',
                            include_find_args=True,
                            include_processing_args=False,
-                           include_move_args=False,
+                           include_workflow_args=False,
                            )
     core.log_versions()
     main(targets=args.targets,
