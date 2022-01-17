@@ -75,7 +75,7 @@ Below are several more advanced use cases.
 ## Changing the defaults of processing
 
 You might want to play with the config file that says how many resources one uses by default.
-The `reprocessing.ini` file. You
+The [`reprocessing.ini`](https://github.com/XENONnT/reprox/blob/master/reprox/reprocessing.ini) file. You
 
 ## Use custom config
 
@@ -94,9 +94,9 @@ reprox-reprocess \
     --context_kwargs '{"s1_min_coincidence": 2, "s2_min_pmts": 10}'
 ```
 
-## Using `nton` from your jupyter notebook
+## Using `reprox` from your jupyter notebook
 
-You can also run the commands from above in a notebook.
+You can also run the commands from above in a notebook or python script.
 
 ```python
 from reprox import find_data, submit_jobs, validate_run
@@ -130,7 +130,7 @@ reprox-reprocess \
     --cpu 2
 ```
 
-## Using old tags
+## Using tagged versions
 
 One might want to run with a different tag as so
 
