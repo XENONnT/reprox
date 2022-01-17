@@ -185,7 +185,7 @@ def _include_processing_args(parser: argparse.ArgumentParser) -> argparse.Argume
         help='Number of CPUs per job to request'
     )
     parser.add_argument(
-        '--submit_only',
+        '--submit-only',
         default=config['processing']['submit_only'],
         type=int,
         help='Limits the total number of jobs to submit. Useful for testing. '
