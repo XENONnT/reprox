@@ -98,7 +98,7 @@ def parse_args(description='nton reprocessing on dali',
         help="Name of the context (should be in the package specified with --package)"
     )
     parser.add_argument(
-        '--context-kwargs',
+        '--context-kwargs', '--context_kwargs',
         dest='context_kwargs',
         type=json.loads,
         default=None,
@@ -110,13 +110,13 @@ def parse_args(description='nton reprocessing on dali',
              '}\''
     )
     parser.add_argument(
-        '--targets',
+        '--targets', '--target',
         default=['event_info', 'event_pattern_fit'],
         nargs='*',
         help='Target final data type to produce. Can be a list for multicore mode.'
     )
     parser.add_argument(
-        '--force-non-admin',
+        '--force-non-admin', '--force_non_admin',
         action='store_true',
         dest='force_non_admin',
         help='Allow non admin users to use this script.'
@@ -142,13 +142,13 @@ def parse_args(description='nton reprocessing on dali',
 def _include_find_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Add arguments for finding data to the parser"""
     parser.add_argument(
-        '--detectors',
+        '--detectors', '--consider_detectors', '--consider-detectors',
         default=['tpc'],
         nargs='*',
         help='Data of detectors to process, choose one or more of "tpc, neutron_veto, muon_veto"'
     )
     parser.add_argument(
-        '--cmt-version',
+        '--cmt-version', '--cmt_version', '--check_cmt_version', '--check-cmt-version',
         default=config['context']['cmt_version'],
         type=str,
         dest='cmt_version',
@@ -162,13 +162,13 @@ def _include_find_args(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 def _include_workflow_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Add arguments for running the entire workflow to the parser"""
     parser.add_argument(
-        '--move-after-workflow',
+        '--move-after-workflow', '--move_after_workflow', '--move',
         action='store_true',
         dest='move_after_workflow',
         help='After running the workflow, move the data into the production folder'
     )
     parser.add_argument(
-        '--skip-find',
+        '--skip-find', '--skip_find',
         action='store_true',
         dest='skip_find',
         help='If set, skip finding the data and just use the CSV file also previously used.'
@@ -179,25 +179,25 @@ def _include_workflow_args(parser: argparse.ArgumentParser) -> argparse.Argument
 def _include_processing_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Add arguments for processing data to the parser"""
     parser.add_argument(
-        '--ram',
+        '--ram', '--RAM',
         default=config['processing']['ram'],
         type=int,
         help='RAM [MB] per CPU to request'
     )
     parser.add_argument(
-        '--cpu',
+        '--cpu', '--cpu_per_job', '--cpu-per-job',
         default=config['processing']['cpus_per_job'],
         type=int,
         help='Number of CPUs per job to request'
     )
     parser.add_argument(
-        '--submit-only',
+        '--submit-only', '--submit_only',
         default=config['processing']['submit_only'],
         type=int,
         help='Limits the total number of jobs to submit. Useful for testing. '
     )
     parser.add_argument(
-        '--tag',
+        '--tag', '--container',
         default=config['processing']['container_tag'],
         type=str,
         help='Container to use for the reprocessing. '

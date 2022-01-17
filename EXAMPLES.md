@@ -150,7 +150,7 @@ reprox-reprocess \
     --cmt-version global_v6 \
     --ram 12000 \
     --cpu 2 \ 
-    --context_kwargs '{"s1_min_coincidence": 2, "s2_min_pmts": 10}'
+    --context-kwargs '{"s1_min_coincidence": 2, "s2_min_pmts": 10}'
 ```
 
 ## Using `reprox` from your jupyter notebook
