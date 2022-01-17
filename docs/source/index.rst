@@ -10,16 +10,11 @@ Content
 
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Setup and basics
 
     setup
     reference/examples
-
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Tutorials:
 
 
 .. toctree::
