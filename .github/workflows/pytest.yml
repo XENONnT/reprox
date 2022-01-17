@@ -70,7 +70,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: matrix.test == 'coveralls'
         run: |
-          coverage run --source=reprox setup.py test -v
+          coverage run --source=reprox,bin setup.py test -v
           coveralls --service=github
       # Done
       - name: goodbye
