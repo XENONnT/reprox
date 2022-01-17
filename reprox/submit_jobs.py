@@ -65,6 +65,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
                           qos=partition, ))
 
     core.log.info('Finished submitting jobs, let\'t keep updating the logs')
+    _print_jobs_status(_jobs_status_summary(jobs))
     while n_jobs_running() > break_if_n_jobs_left_running:
         _print_jobs_status(_jobs_status_summary(jobs))
         time.sleep(sleep_s_when_queue_full)
