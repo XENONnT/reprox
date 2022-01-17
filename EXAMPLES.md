@@ -85,7 +85,6 @@ reprox-start-jobs \
     --package cutax \
     --context xenonnt_v6 \
     --target event_info event_pattern_fit cuts_basic \
-    --cmt-version global_v6 \
     --ram 12000 \
     --cpu 2
 ```

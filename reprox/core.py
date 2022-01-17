@@ -129,7 +129,7 @@ def parse_args(description='nton reprocessing on dali',
         parser = _include_move_args(parser)
 
     args = parser.parse_args()
-    if args.cmt_version == 'False':
+    if hasattr(args, 'cmt_version') and args.cmt_version == 'False':
         args.cmt_version = False
     if not args.force_non_admin and not check_user_is_admin():
         raise PermissionError(
