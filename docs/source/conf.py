@@ -18,6 +18,11 @@
 
 
 # -- Project information -----------------------------------------------------
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+import _pre_run
+
 import reprox
 project = 'reprox'
 copyright = '2022, J.R. Angevaare'  # noqa
@@ -25,6 +30,7 @@ author = 'J.R. Angevaare'
 
 # The short X.Y version
 version = reprox.__version__
+
 # The full version, including alpha/beta/rc tags
 release = reprox.__version__
 
