@@ -10,7 +10,7 @@ from .submit_jobs import *
 from . import submit_jobs
 
 from .validate_run import *
-from . import submit_jobs
+from . import validate_run
 
 from .process_job import *
 from . import process_job

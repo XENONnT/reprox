@@ -6,5 +6,7 @@ def test_find_runs():
         context_kwargs=dict(context='xenonnt_online',
                             package='straxen',
                             config_kwargs=None,
+                            _minimum_run_number=20_000,
+                            _maximum_run_number=21_000,
                             )
     )
