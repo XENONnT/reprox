@@ -10,11 +10,11 @@ There are several (sequential) steps with (associated scripts):
 - Process the runs that were found (`reprox-start-jobs`)
 - Move the data that was processed to the desired folder (`reprox-move-folders`)
 
-One can also run these three steps from one file (`reprox-start-jobs`), which runs all three in
+One can also run these three steps from one file (`reprox-reprocess`), which runs all three in
 order.
 
 The best place to start is by going over these files and do
-`python run_determine_data.py --help` to see which options there are. Most are discussed below.
+`reprox-find-data --help` to see which options there are. Most are discussed below.
 
 ## Running step by step
 
