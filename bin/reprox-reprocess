@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from nton.reprocessing.reprocessing_inner import core, determine_data, submit_jobs, validate_run
+from reprox import core, find_runs, submit_jobs, validate_run
 
 
 def main(targets,
@@ -12,7 +12,7 @@ def main(targets,
     core.log.info(f'Starting workflow')
     if not os.path.exists(core.runs_csv) or force_find:
         core.log.info("Doing data find")
-        determine_data.determine_data(
+        find_runs.determine_data(
             targets=targets,
             exclude_from_invalid_cmt_version=cmt_version,
             context_kwargs=context_kwargs

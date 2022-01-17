@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from nton.reprocessing.reprocessing_inner import determine_data, core
+from reprox import find_runs, core
 
 
 def main(targets,
@@ -13,7 +13,7 @@ def main(targets,
     :param context_kwargs: extra options passed on to the context
     :return: None
     """
-    determine_data.determine_data(
+    find_runs.determine_data(
         targets=targets,
         exclude_from_invalid_cmt_version=exclude_from_invalid_cmt_version,
         context_kwargs=context_kwargs,

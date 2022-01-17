@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from nton.reprocessing.reprocessing_inner import core, submit_jobs
+from reprox import core, submit_jobs
 
 
 def main(targets: list, submit_kwargs: dict) -> None:
