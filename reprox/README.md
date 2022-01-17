@@ -93,14 +93,12 @@ reprox-reprocess \
 You can also run the commands from above in a notebook.
 
 ```python
-from nton.reprocessing import run_determine_data
-from nton.reprocessing import run_submit_jobs
-from nton.reprocessing import run_move_to_production
+from reprox import find_data, submit_jobs, validate_run
 
 targets = 'event_info event_pattern_fit cuts_basic'.split()
 
 # First determine which data to process
-run_determine_data.main(
+find_data.main(
     targets=targets,
     exclude_from_invalid_cmt_version='global_v6'
 )

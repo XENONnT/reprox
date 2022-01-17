@@ -7,7 +7,7 @@ import utilix
 from reprox import core
 
 
-def determine_data(
+def find_data(
         targets: ty.Union[str, list, tuple],
         exclude_from_invalid_cmt_version: ty.Union[bool, str] = (
                 core.config['context']['cmt_version']),
