@@ -23,8 +23,8 @@ def main(targets: list, submit_kwargs: dict) -> None:
     for option, default in defaults.items():
         submit_kwargs.setdefault(option, default)
 
-    submit_jobs.submit_jobs(targets,
-                            submit_kwargs
+    submit_jobs.submit_jobs(targets=targets,
+                            submit_kwargs=submit_kwargs
                             )
 
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     args = core.parse_args('Submit processing jobs',
                            include_find_args=False,
                            include_processing_args=True,
-                           include_move_args=False,
+                           include_workflow_args=False,
                            )
     core.log_versions()
     main(targets=args.targets,

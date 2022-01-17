@@ -95,7 +95,7 @@ production folder. This includes a check to see if the data was processed succes
 even if a few jobs failed (or are still running), you can safely run this command below.
 
 ```bash
-reporx-move-folders
+reprox-move-folders
 ```
 
 ### Run entire workflow (steps 1-3 in a single command) 
@@ -150,7 +150,7 @@ reprox-reprocess \
     --cmt-version global_v6 \
     --ram 12000 \
     --cpu 2 \ 
-    --context_kwargs '{"s1_min_coincidence": 2, "s2_min_pmts": 10}'
+    --context-kwargs '{"s1_min_coincidence": 2, "s2_min_pmts": 10}'
 ```
 
 ## Using `reprox` from your jupyter notebook
