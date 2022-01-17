@@ -16,6 +16,9 @@ with open('README.md') as file:
 with open('HISTORY.md') as file:
     history = file.read()
 
+with open('EXAMPLES.md') as file:
+    examples = file.read()
+
 requires = open_requirements('requirements.txt')
 tests_requires = open_requirements('extra_requirements/requirements-tests.txt')
 doc_requires = open_requirements('extra_requirements/requirements-docs.txt')
@@ -25,7 +28,7 @@ setuptools.setup(name='reprox',
                  description='Reprocessing for XENONnT',
                  author='J. R. Angevaare',
                  url='https://github.com/XENONnT/reprox',
-                 long_description=readme + '\n\n' + history,
+                 long_description=readme + '\n\n' + examples + '\n\n' + history,
                  long_description_content_type="text/markdown",
                  setup_requires=['pytest-runner'],
                  install_requires=requires,

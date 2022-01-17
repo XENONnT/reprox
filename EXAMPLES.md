@@ -72,6 +72,11 @@ reprox-reprocess \
 
 Below are several more advanced use cases.
 
+## Changing the defaults of processing
+
+You might want to play with the config file that says how many resources one uses by default.
+The `reprocessing.ini` file. You
+
 ## Use custom config
 
 You might want to process some data with slightly different settings, this can be done using
@@ -104,10 +109,10 @@ find_data.main(
     exclude_from_invalid_cmt_version='global_v6'
 )
 # Now start running the jobs
-run_submit_jobs.main(targets=targets)
+submit_jobs.submit_jobs(targets=targets)
 
 # Finally move the jobs to the production folder
-run_move_to_production.main()
+validate_run.move_all.main()
 ```
 
 ## Processing NV data
@@ -116,7 +121,7 @@ By default, the package assumes that only linked-mode or TPC runs are processed,
 instead process NV data you need to tell the scripts to also take into account the NV detector:
 
 ```bash
-python run_workflow.py \
+reprox-reprocess \
     --package cutax \
     --context xenonnt_v6 \
     --target events_nv \
@@ -131,7 +136,7 @@ One might want to run with a different tag as so
 
 ```bash
 source /cvmfs/xenon.opensciencegrid.org/releases/nT/2021.12.2/setup.sh
-python run_workflow.py \
+reprox-reprocess \
     --package cutax  \
     --context xenonnt_v5  \
     --targets event_info \
@@ -142,7 +147,4 @@ python run_workflow.py \
     --tag 2021.12.2
 ```
 
-## Changing the defaults
 
-You might want to play with the config file that says how many resources one uses by default.
-See `reprocessing.ini`

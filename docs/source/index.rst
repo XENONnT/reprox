@@ -14,6 +14,7 @@ Content
     :caption: Setup and basics
 
     setup
+    reference/examples
 
 
 .. toctree::
@@ -25,7 +26,7 @@ Content
     :maxdepth: 1
     :caption: Reference
 
-    reference/pema
+    reference/reprox
 
 
 Indices and tables
