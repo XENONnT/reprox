@@ -12,7 +12,6 @@ def open_requirements(path):
 with open('README.md') as file:
     readme = file.read()
 
-
 with open('HISTORY.md') as file:
     history = file.read()
 
@@ -32,7 +31,7 @@ setuptools.setup(name='reprox',
                  long_description_content_type="text/markdown",
                  setup_requires=['pytest-runner'],
                  install_requires=requires,
-                 tests_require=requires+tests_requires,
+                 tests_require=requires + tests_requires,
                  extras_require={
                      'docs': doc_requires,
                  },

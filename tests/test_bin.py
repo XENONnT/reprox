@@ -6,6 +6,7 @@ from reprox import core
 
 class TestHelp(unittest.TestCase):
     """Test that the help function works on all the scripts"""
+
     def _exec_help(self, cmd):
         ret = subprocess.Popen(shlex.split(cmd))
         ret.communicate()

@@ -75,8 +75,8 @@ Below are several more advanced use cases.
 ## Changing the defaults of processing
 
 You might want to play with the config file that says how many resources one uses by default.
-The [`reprocessing.ini`](https://github.com/XENONnT/reprox/blob/master/reprox/reprocessing.ini) file. 
-You can either change the source code of this file, or you can overwrite it as follows:
+The [`reprocessing.ini`](https://github.com/XENONnT/reprox/blob/master/reprox/reprocessing.ini)
+file. You can either change the source code of this file, or you can overwrite it as follows:
 
 ```bash
 git clone git@github.com:XENONnT/reprox.git
@@ -89,7 +89,8 @@ cp reprox/reprox/reprocessing.ini my_reprocessing_config.ini
 export export REPROX_CONFIG=$(pwd)/my_reprocessing_config.ini
 ```
 
-You will see that your defaults have been changed (e.g. do `reprox-reprocess --help`) reflecting the changes you made in the `.ini` file.
+You will see that your defaults have been changed (e.g. do `reprox-reprocess --help`) reflecting the
+changes you made in the `.ini` file.
 
 ## Use custom config
 
