@@ -47,7 +47,7 @@ class ProcessingJob:
         with open(fn, 'r') as f:
             lines = f.read().splitlines()
             end = lines[-read_last * 2:]
-        end = [line for line in end if not any(p in line for p in ignore_patterns)]
+        end = [line for line in end if all(p not in line for p in ignore_patterns)]
         _pr = ' '.join(end).lower()
 
         if 'killed' in _pr or 'error' in _pr or 'raise' in _pr:
