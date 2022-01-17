@@ -87,9 +87,10 @@ def determine_data_to_reprocess(
         runs = runs[correct_detector]
 
     core.log.info('Find special modes')
-    special_mode_mask = np.array([
-        any([x in mode for x in special_modes])
-        for mode in runs['mode'].values])
+    special_mode_mask = np.array(
+        [any(x in mode for x in special_modes) for mode in runs['mode'].values]
+    )
+
     core.log.info(f"Found {np.sum(special_mode_mask)}/{len(runs)} special modes ({special_modes}) "
                   f"Leave these alone for now.")
     runs = runs[~special_mode_mask]
@@ -167,7 +168,10 @@ def get_sources(self, r, targets, **kwargs):
         if source:
             res['can_make'][0] = source != set(targets)
     except Exception as e:
-        core.log.error(f'No result for {r}, {targets} due to {str(e)} is the data corrupted?')
+        core.log.error(
+            f'No result for {r}, {targets} due to {e} is the data corrupted?'
+        )
+
         raise e
     return res
 
@@ -190,14 +194,12 @@ def __get_source(self,
         from and are needed in order to build this target.
     """
     try:
-        return set(plugin_name
-                   for plugin_name, plugin_stored in
-                   self.__stored_dependencies(run_id=run_id,
-                                              target=target,
-                                              check_forbidden=check_forbidden
-                                              ).items()
-                   if plugin_stored
-                   )
+        return {plugin_name for plugin_name, plugin_stored in
+                           self.__stored_dependencies(run_id=run_id,
+                                                      target=target,
+                                                      check_forbidden=check_forbidden
+                                                      ).items()
+                           if plugin_stored}
     except strax.DataNotAvailable:
         return None
 
@@ -223,7 +225,7 @@ def __stored_dependencies(self,
         cannot be created
     """
     if _targets_stored is None:
-        _targets_stored = dict()
+        _targets_stored = {}
 
     targets = strax.to_str_tuple(target)
     if len(targets) > 1:
@@ -256,11 +258,11 @@ def __stored_dependencies(self,
         raise strax.DataNotAvailable(f'Lowest level dependency {target} is not stored')
 
     forbidden = strax.to_str_tuple(self.context_config['forbid_creation_of'])
-    forbidden_warning = (
-        'For {run_id}:{target}, you are not allowed to make {dep} and '
-        'it is not stored. Disable check with check_forbidden=False'
-    )
     if check_forbidden and target in forbidden:
+        forbidden_warning = (
+            'For {run_id}:{target}, you are not allowed to make {dep} and '
+            'it is not stored. Disable check with check_forbidden=False'
+        )
         raise strax.DataNotAvailable(
             forbidden_warning.format(run_id=run_id, target=target, dep=target, ))
 

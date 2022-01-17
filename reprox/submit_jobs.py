@@ -179,7 +179,7 @@ def _make_job(run_name: ty.List[str],
         timeout=int(core.config['context']['straxer_timeout_seconds']),
         extra_options=extra_commands,
     )
-    job = ProcessingJob(
+    return ProcessingJob(
         run_id=run_name,
         targets=targets,
         submit_kwargs=dict(
@@ -190,9 +190,8 @@ def _make_job(run_name: ty.List[str],
             cpus_per_task=cpus_per_task,  # Almost never an issue, better ask for more RAM
             container=container,
             sbatch_file=sbatch_file,
-        )
+        ),
     )
-    return job
 
 
 def n_jobs_running():
@@ -219,5 +218,4 @@ def cycle_queue(queues=('xenon1t', 'dali', 'broadwl')
 
 
 def get_rundoc(run_id):
-    rd = utilix.rundb.xent_collection().find_one({'number': int(run_id)})
-    return rd
+    return utilix.rundb.xent_collection().find_one({'number': int(run_id)})
