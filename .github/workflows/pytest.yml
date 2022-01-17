@@ -47,8 +47,9 @@ jobs:
       - name: test env
         env:
           REPROX_CONFIG: /home/reprox/test_folder/test.ini
-        echo $REPROX_CONFIG
-        echo $(pwd)
+        run: |
+          echo $REPROX_CONFIG
+          echo $(pwd)
       # Secrets and required files
       - name: patch utilix file
         # Patch this file if we want to have access to the database
