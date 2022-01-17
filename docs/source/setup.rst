@@ -7,6 +7,8 @@ Install using:
 
 or, as recommended, use the developer installation:
 
+
 .. code-block:: bash
+
   git clone git@github.com:XENONnT/reprox.git
   pip install -e reprox
