@@ -28,7 +28,7 @@ jobs:
           - python-version: 3.9
             test: coveralls
           - python-version: 3.7
-              test: coveralls
+            test: coveralls
     env:
       REPROX_CONFIG: /home/runner/work/reprox/reprox/test_folder/test.ini
     steps:
