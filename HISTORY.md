@@ -1,3 +1,8 @@
+0.0.3 / 2022-01-17
+------------------
+- Bugfix data finding (#17)
+
+
 0.0.2 / 2022-01-17
 -------------------
 - Bugfix for kwargs in job submssion (#15
