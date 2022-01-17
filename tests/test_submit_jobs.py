@@ -78,7 +78,7 @@ echo \
         dest_folder = os.path.join(core.config['context']['base_folder'], 'strax_data')
         for k in keys:
             data_dir = dest_folder + '/{run_name}' + f'-{k.data_type}-{k.lineage_hash}'
-            command += f'\nmkdir {data_dir}'
+            command += f'\nmkdir -p {data_dir}'
             command += f'\ncp {self.dummy_md} {data_dir}/{k.data_type}-{k.lineage_hash}-metadata.json'
         command += "\necho Processing job ended"
         core.command = command
