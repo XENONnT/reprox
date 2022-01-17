@@ -7,6 +7,7 @@ import unittest
 import strax
 import json
 import subprocess
+import shlex
 
 
 class TestingHacks:
@@ -29,11 +30,10 @@ class TestingHacks:
         def _fake_submit(*args, **kwargs):
             cmd = kwargs['jobstring']
             # disable bandit
-            result = subprocess.run(
-                cmd,
-                shell=True,
-                capture_output=True)
-            core.log.info(f'{cmd} gave \n {result}')
+            ret = subprocess.Popen(shlex.split(cmd))
+            ret.communicate()
+            core.log.info(f'{cmd} returned {ret}')
+            assert ret.returncode == 0, ret
 
         process_job.ProcessingJob._submit = _fake_submit
 
