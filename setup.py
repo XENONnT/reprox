@@ -45,7 +45,7 @@ setuptools.setup(name='reprox',
                           'bin/reprox-reprocess',
                           'bin/reprox-start-jobs'],
                  classifiers=[
-                     'Development Status :: 5 - Production/Stable'
+                     'Development Status :: 5 - Production/Stable',
                      'License :: OSI Approved :: BSD License',
                      'Natural Language :: English',
                      'Programming Language :: Python :: 3.6',
