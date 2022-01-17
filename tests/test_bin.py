@@ -10,8 +10,7 @@ class TestHelp(unittest.TestCase):
         ret = subprocess.Popen(shlex.split(cmd))
         ret.communicate()
         core.log.info(f'{cmd} returned {ret}')
-        assert ret.returncode == 0
-        assert False, ret
+        assert ret.returncode == 0, ret
 
     def test_find_data(self):
         self._exec_help('reprox-find-data --help')
