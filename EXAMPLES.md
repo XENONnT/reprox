@@ -18,7 +18,7 @@ The best place to start is by going over these files and do
 
 ## Running step by step
 Below, we show how these three steps are done. This can also be done in one 
-command [skip to single command.](https://reprox.readthedocs.io/en/latest/reference/examples.html#run-entire-workflow-(steps-1-3-in-a-single-command)
+command [skip to single command.](https://reprox.readthedocs.io/en/latest/reference/examples.html#run-entire-workflow-steps-1-3-in-a-single-command)
 
 ### Step 0 - Activation and test installation
 You only have to do it once, to prevent confusion we will go over it step by step.
