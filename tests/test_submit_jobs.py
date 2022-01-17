@@ -1,14 +1,45 @@
 import os
 
 import pandas as pd
-from reprox import core, submit_jobs
+from reprox import core, submit_jobs, process_job
 from bson import json_util
 import unittest
 import strax
 import json
+import subprocess
 
 
-class TestSubmitJobs(unittest.TestCase):
+class TestingHacks:
+    @staticmethod
+    def hack_squeue():
+        def _return_dali(*args, **kwargs):
+            return 'dali'
+        submit_jobs.cycle_queue = _return_dali
+
+    @staticmethod
+    def hack_njobs():
+        def _return_zero():
+            return 0
+        submit_jobs.n_jobs_running = _return_zero
+
+    @staticmethod
+    def hack_execute_command():
+        def _fake_submit(*args, **kwargs):
+            cmd = kwargs['jobstring']
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True)
+            core.log.info(f'{cmd} gave \n {result}')
+        process_job.ProcessingJob._submit = _fake_submit
+
+    def perform_testing_hacks(self):
+        self.hack_squeue()
+        self.hack_njobs()
+        self.hack_execute_command()
+
+
+class TestSubmitJobs(unittest.TestCase, TestingHacks):
     context = 'xenonnt_online'
     package = 'straxen'
     target = 'event_info_double'
@@ -40,6 +71,7 @@ echo \
             command += f'\ncp {self.dummy_md} {data_dir}/{k.data_type}-{k.lineage_hash}-metadata.json'
         command += "\necho Processing job ended"
         core.command = command
+        self.perform_testing_hacks()
 
     def tearDown(self) -> None:
         if os.path.exists(self.dummy_md):
