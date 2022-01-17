@@ -6,11 +6,12 @@ Process data in so far available on dali with the current container
 
 There are several (sequential) steps with (associated scripts):
 
-- Find runs to process (`run_determine_data.py`)
-- Process the runs that were found (`run_submit_jobs.py`)
-- Move the data that was processed to the desired folder (`run_move_to_production.py`)
+- Find runs to process (`reprox-find-data`)
+- Process the runs that were found (`reprox-start-jobs`)
+- Move the data that was processed to the desired folder (`reprox-move-folders`)
 
-One can also run these three steps from one file (`run_workflow.py`), which runs all three in order.
+One can also run these three steps from one file (`reprox-start-jobs`), which runs all three in
+order.
 
 The best place to start is by going over these files and do
 `python run_determine_data.py --help` to see which options there are. Most are discussed below.
@@ -26,7 +27,7 @@ source /cvmfs/xenon.opensciencegrid.org/releases/nT/development/setup.sh
 Determine which data to process
 
 ```bash
-python run_determine_data.py \
+reprox-find-data \
     --package cutax \
     --context xenonnt_v6 \
     --target event_info event_pattern_fit cuts_basic \
@@ -38,7 +39,7 @@ called `/dali/lgrandi/xenonnt/data_management_reprocessing/to_do_runs.csv` (depe
 file)
 
 ```bash
-python run_submit_jobs.py \
+reprox-start-jobs \
     --package cutax \
     --context xenonnt_v6 \
     --target event_info event_pattern_fit cuts_basic \
@@ -51,13 +52,13 @@ Now, hopefully most of the data has been processed successfully, we can now move
 production folder
 
 ```bash
-python run_move_to_production.py
+reporx-move-folders
 ```
 
 Or run it as a single command
 
 ```bash
-python run_workflow.py \
+reprox-reprocess \
     --package cutax \
     --context xenonnt_v6 \
     --target event_info event_pattern_fit cuts_basic \
@@ -78,7 +79,7 @@ the`--context_kwargs` argument as follows
 (please don't move it into the production folder unless you know what you are doing):
 
 ```bash
-python run_workflow.py \
+reprox-reprocess \
     --package cutax \
     --context xenonnt_v6 \
     --target event_info event_pattern_fit cuts_basic \
@@ -93,14 +94,12 @@ python run_workflow.py \
 You can also run the commands from above in a notebook.
 
 ```python
-from nton.reprocessing import run_determine_data
-from nton.reprocessing import run_submit_jobs
-from nton.reprocessing import run_move_to_production
+from reprox import find_data, submit_jobs, validate_run
 
 targets = 'event_info event_pattern_fit cuts_basic'.split()
 
 # First determine which data to process
-run_determine_data.main(
+find_data.main(
     targets=targets,
     exclude_from_invalid_cmt_version='global_v6'
 )
@@ -127,7 +126,9 @@ python run_workflow.py \
 ```
 
 ## Using old tags
+
 One might want to run with a different tag as so
+
 ```bash
 source /cvmfs/xenon.opensciencegrid.org/releases/nT/2021.12.2/setup.sh
 python run_workflow.py \

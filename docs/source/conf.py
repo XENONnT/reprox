@@ -20,11 +20,14 @@
 # -- Project information -----------------------------------------------------
 import os
 import sys
+
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import _pre_run
 
 import reprox
+
 project = 'reprox'
+# pylint: disable=redefined-builtin
 copyright = '2022, J.R. Angevaare'  # noqa
 author = 'J.R. Angevaare'
 
@@ -33,7 +36,6 @@ version = reprox.__version__
 
 # The full version, including alpha/beta/rc tags
 release = reprox.__version__
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -55,10 +57,12 @@ extensions = [
 import sys
 from unittest.mock import MagicMock
 
+
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
         return MagicMock()
+
 
 MOCK_MODULES = ['zstd', 'blosc']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
@@ -72,7 +76,7 @@ templates_path = ['_templates']
 source_suffix = ['.rst', '.md']
 
 source_parsers = {
-   '.md': 'recommonmark.parser.CommonMarkParser',
+    '.md': 'recommonmark.parser.CommonMarkParser',
 }
 
 # The master toctree document.
@@ -92,7 +96,6 @@ exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
-
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -128,7 +131,6 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'reproxdoc'
 
-
 # -- Options for LaTeX output ------------------------------------------------
 
 latex_elements = {
@@ -157,7 +159,6 @@ latex_documents = [
      'J. R. Angevaare', 'manual'),
 ]
 
-
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
@@ -166,7 +167,6 @@ man_pages = [
     (master_doc, 'reprox', 'reprox Documentation',
      [author], 1)
 ]
-
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -178,7 +178,6 @@ texinfo_documents = [
      author, 'reprox', 'One line description of project.',
      'Miscellaneous'),
 ]
-
 
 # -- Extension configuration -------------------------------------------------
 

@@ -18,11 +18,15 @@ class ProcessingJob:
 
     def submit(self, **extra_kwargs):
         """Submit the job to be run"""
-        self.submit_message = utilix.batchq.submit_job(
+        self.submit_message = self._submit(
             **{**self.submit_kwargs,
                **extra_kwargs}
         )
         core.log.info(f'Submitted {self}')
+
+    @staticmethod
+    def _submit(**kwargs):
+        return utilix.batchq.submit_job(**kwargs)
 
     def __repr__(self):
         rep = f"Process {self.run_id}-{self.targets}| status: {self.get_run_job_state()}"

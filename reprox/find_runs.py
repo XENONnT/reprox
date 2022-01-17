@@ -7,7 +7,7 @@ import utilix
 from reprox import core
 
 
-def determine_data(
+def find_data(
         targets: ty.Union[str, list, tuple],
         exclude_from_invalid_cmt_version: ty.Union[bool, str] = (
                 core.config['context']['cmt_version']),
@@ -175,10 +175,10 @@ def get_sources(self, r, targets, **kwargs):
 # Copied from strax.Context.get_source for strax <= 1.1.3 (when this feature was added)
 @strax.context.Context.add_method
 def __get_source(self,
-               run_id: str,
-               target: str,
-               check_forbidden: bool = True,
-               ) -> ty.Union[set, None]:
+                 run_id: str,
+                 target: str,
+                 check_forbidden: bool = True,
+                 ) -> ty.Union[set, None]:
     """
     For a given run_id and target get the stored bases where we can
     start processing from, if no base is available, return None.
@@ -193,22 +193,23 @@ def __get_source(self,
         return set(plugin_name
                    for plugin_name, plugin_stored in
                    self.__stored_dependencies(run_id=run_id,
-                                            target=target,
-                                            check_forbidden=check_forbidden
-                                            ).items()
+                                              target=target,
+                                              check_forbidden=check_forbidden
+                                              ).items()
                    if plugin_stored
                    )
     except strax.DataNotAvailable:
         return None
 
+
 # Copied from strax.Context.get_source for strax <= 1.1.3 (when this feature was added)
 @strax.context.Context.add_method
 def __stored_dependencies(self,
-                        run_id: str,
-                        target: ty.Union[str, list, tuple],
-                        check_forbidden: bool = True,
-                        _targets_stored: ty.Optional[dict] = None,
-                        ) -> ty.Optional[dict]:
+                          run_id: str,
+                          target: ty.Union[str, list, tuple],
+                          check_forbidden: bool = True,
+                          _targets_stored: ty.Optional[dict] = None,
+                          ) -> ty.Optional[dict]:
     """
     For a given run_id and target(s) get a dictionary of all the datatypes that:
     :param run_id: run_id
@@ -261,7 +262,7 @@ def __stored_dependencies(self,
     )
     if check_forbidden and target in forbidden:
         raise strax.DataNotAvailable(
-            forbidden_warning.format(run_id=run_id, target=target, dep=target,))
+            forbidden_warning.format(run_id=run_id, target=target, dep=target, ))
 
     self.stored_dependencies(run_id,
                              target=dependencies,
@@ -269,6 +270,7 @@ def __stored_dependencies(self,
                              _targets_stored=_targets_stored,
                              )
     return _targets_stored
+
 
 def _within_valid_cmt_dates(runs: pd.DataFrame, cmt_version: str) -> np.ndarray:
     v5_start, v5_end = utilix.rundb.cmt_global_valid_range(cmt_version)
