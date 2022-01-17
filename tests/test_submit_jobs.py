@@ -1,7 +1,7 @@
 import os
 
 import pandas as pd
-from reprox import core, submit_jobs, process_job
+from reprox import core, submit_jobs, process_job, validate_run
 from bson import json_util
 import unittest
 import strax
@@ -26,12 +26,20 @@ class TestingHacks:
     def hack_execute_command():
         def _fake_submit(*args, **kwargs):
             cmd = kwargs['jobstring']
+            # disable bandit
             result = subprocess.run(
                 cmd,
                 shell=True,
                 capture_output=True)
             core.log.info(f'{cmd} gave \n {result}')
+
         process_job.ProcessingJob._submit = _fake_submit
+
+    @staticmethod
+    def hack_changing_user_group():
+        def _do_nothing(*args, **kwargs):
+            pass
+        validate_run.change_ownership =  _do_nothing()
 
     def perform_testing_hacks(self):
         self.hack_squeue()
@@ -79,6 +87,10 @@ echo \
 
     def test_submit_jobs(self):
         submit_jobs.submit_jobs()
+
+    def test_move_all(self):
+        submit_jobs.submit_jobs()
+        validate_run.move_all()
 
     def get_context(self):
         return core.get_context(context=self.context, package=self.package)
