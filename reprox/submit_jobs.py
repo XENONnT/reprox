@@ -45,8 +45,8 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
         raise FileNotFoundError(f'{core.runs_csv} does not exist, run determine_data.py first!')
     runs = pd.read_csv(core.runs_csv)['name'].values
     runs = [f'{r:06}' for r in runs]
-    if submit_only is not None:
-        # runs = runs[:submit_only]
+    if submit_only is not 0:
+        runs = runs[:submit_only]
         core.log.info(f'Passed submit_only={submit_only}. Only processing a subset of runs')
 
     jobs = _make_jobs(
