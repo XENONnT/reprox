@@ -39,6 +39,16 @@ jobs:
         run: |
             pip install -r extra_requirements/requirements-tests.txt
             python setup.py develop
+      - name: setup test config
+        run: |
+          bash .github/scripts/overwrite_testing_file.sh test_folder test.ini
+      - name: test env
+        env:
+          REPROX_CONFIG: $pwd/test_folder/test.ini
+          REPROX_CONFIG2: /home/reprox/test_folder/test.ini
+        echo $REPROX_CONFIG
+        echo $REPROX_CONFIG2
+        echo $pwd
       # Secrets and required files
       - name: patch utilix file
         # Patch this file if we want to have access to the database
@@ -52,7 +62,7 @@ jobs:
           PYMONGO_USER: ${{ secrets.PYMONGO_USER }}
           PYMONGO_PASSWORD: ${{ secrets.PYMONGO_PASSWORD }}
           PYMONGO_DATABASE: ${{ secrets.PYMONGO_DATABASE }}
-
+          REPROX_CONFIG: $pwd/test_folder/test.ini
       # Run tests
       - name: Test package
         # This is running a normal test
