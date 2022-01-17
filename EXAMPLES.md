@@ -75,7 +75,7 @@ Below are several more advanced use cases.
 ## Changing the defaults of processing
 
 You might want to play with the config file that says how many resources one uses by default.
-The [`reprocessing.ini`](https://github.com/XENONnT/reprox/blob/master/reprox/reprocessing.ini)
+The [reprocessing.ini](https://github.com/XENONnT/reprox/blob/master/reprox/reprocessing.ini)
 file. You can either change the source code of this file, or you can overwrite it as follows:
 
 ```bash
