@@ -1,0 +1,55 @@
+# XENON secrets: run database passwords, S3 keys, etc.
+# Though these are readonly, they should not be committed to a public repo.
+xenon_secrets.py
+
+# Jupyter
+.ipynb_checkpoints
+
+# Data (temporary?)
+*.bz2
+*.zstd
+*.npy
+*.blosc
+*.h5
+strax_data
+resource_cache
+raw
+*.csv
+# cProfile output
+*.prof
+
+# Python cache
+*.py[cod]
+__pycache__
+
+# Testing caches
+.pytest_cache
+.hypothesis
+
+# Packages
+.eggs
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+pytest-coverage.txt
+
+# Sphinx
+docs/_build
+
+# Pycharm
+.idea
+
+# coverage
+.coverage
+
+# ignore old folders
+old/
