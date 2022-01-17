@@ -86,7 +86,7 @@ cp reprox/reprox/reprocessing.ini my_reprocessing_config.ini
 # vi my_reprocessing_config.ini 
 
 # overwrite the file used using an environment variable
-export export REPROX_CONFIG=$(pwd)/my_reprocessing_config.ini
+export REPROX_CONFIG=$(pwd)/my_reprocessing_config.ini
 ```
 
 You will see that your defaults have been changed (e.g. do `reprox-reprocess --help`) reflecting the
