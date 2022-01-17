@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pandas as pd
 from reprox import core, submit_jobs, process_job, validate_run
@@ -7,7 +8,7 @@ import unittest
 import strax
 import json
 import subprocess
-import shlex
+import glob
 
 
 class TestingHacks:
@@ -30,10 +31,8 @@ class TestingHacks:
         def _fake_submit(*args, **kwargs):
             cmd = kwargs['jobstring']
             # disable bandit
-            ret = subprocess.Popen(shlex.split(cmd))
-            ret.communicate()
-            core.log.info(f'{cmd} returned {ret}')
-            assert ret.returncode == 0, ret
+            result = subprocess.run(cmd, shell=True, capture_output=True)  # noqa
+            core.log.info(f'{cmd} gave \n {result}')
 
         process_job.ProcessingJob._submit = _fake_submit
 
@@ -56,6 +55,7 @@ class TestSubmitJobs(unittest.TestCase, TestingHacks):
     target = 'event_info_double'
     dummy_md = os.path.join(os.path.abspath('.'), '.dummy_md.json')
     runs = tuple(f'{r:06}' for r in range(20_000, 20_050))
+    dest_folder = os.path.join(core.config['context']['base_folder'], 'strax_data')
 
     def setUp(self) -> None:
         self.write_csv()
@@ -75,9 +75,9 @@ echo \
     --timeout {timeout} 
     {extra_options}
 """
-        dest_folder = os.path.join(core.config['context']['base_folder'], 'strax_data')
+
         for k in keys:
-            data_dir = dest_folder + '/{run_name}' + f'-{k.data_type}-{k.lineage_hash}'
+            data_dir = self.dest_folder + '/{run_name}' + f'-{k.data_type}-{k.lineage_hash}'
             command += f'\nmkdir -p {data_dir}'
             command += f'\ncp {self.dummy_md} {data_dir}/{k.data_type}-{k.lineage_hash}-metadata.json'
         command += "\necho Processing job ended"
@@ -87,6 +87,8 @@ echo \
     def tearDown(self) -> None:
         if os.path.exists(self.dummy_md):
             os.remove(self.dummy_md)
+        for folder in glob.glob(os.path.join(self.dest_folder, '*')):
+            shutil.rmtree(folder)
 
     def test_submit_jobs(self):
         submit_jobs.submit_jobs()
