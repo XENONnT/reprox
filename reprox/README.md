@@ -10,7 +10,8 @@ There are several (sequential) steps with (associated scripts):
 - Process the runs that were found (`reprox-start-jobs`)
 - Move the data that was processed to the desired folder (`reprox-move-folders`)
 
-One can also run these three steps from one file (`reprox-start-jobs`), which runs all three in order.
+One can also run these three steps from one file (`reprox-start-jobs`), which runs all three in
+order.
 
 The best place to start is by going over these files and do
 `python run_determine_data.py --help` to see which options there are. Most are discussed below.
@@ -125,7 +126,9 @@ python run_workflow.py \
 ```
 
 ## Using old tags
+
 One might want to run with a different tag as so
+
 ```bash
 source /cvmfs/xenon.opensciencegrid.org/releases/nT/2021.12.2/setup.sh
 python run_workflow.py \

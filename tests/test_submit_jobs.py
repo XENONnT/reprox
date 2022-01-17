@@ -14,12 +14,14 @@ class TestingHacks:
     def hack_squeue():
         def _return_dali(*args, **kwargs):
             return 'dali'
+
         submit_jobs.cycle_queue = _return_dali
 
     @staticmethod
     def hack_njobs():
         def _return_zero():
             return 0
+
         submit_jobs.n_jobs_running = _return_zero
 
     @staticmethod
@@ -39,7 +41,8 @@ class TestingHacks:
     def hack_changing_user_group():
         def _do_nothing(*args, **kwargs):
             pass
-        validate_run.change_ownership =  _do_nothing()
+
+        validate_run.change_ownership = _do_nothing
 
     def perform_testing_hacks(self):
         self.hack_squeue()
@@ -101,7 +104,7 @@ echo \
                              })
         pd.DataFrame(runs).to_csv(core.runs_csv)
 
-    def write_dummy_json(self, path:str, content: dict)->None:
+    def write_dummy_json(self, path: str, content: dict) -> None:
         folder = os.path.split(path)[0]
         os.makedirs(folder, exist_ok=True)
 
