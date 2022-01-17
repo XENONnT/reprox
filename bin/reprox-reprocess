@@ -9,7 +9,7 @@ def main(targets,
          submit_only,
          force_find,
          ):
-    core.log.info(f'Starting workflow')
+    core.log.info('Starting workflow')
     if not os.path.exists(core.runs_csv) or force_find:
         core.log.info("Doing data find")
         find_runs.find_data(
@@ -19,7 +19,7 @@ def main(targets,
         )
     else:
         core.log.info(f"Using already-created runlist at {core.runs_csv}")
-    core.log.info(f'Start jobs submission')
+    core.log.info('Start jobs submission')
     submit_jobs.submit_jobs(
         targets=targets,
         submit_kwargs=dict(
@@ -32,11 +32,14 @@ def main(targets,
         submit_only=submit_only
     )
     if args.move_after_workflow:
-        core.log.info(f'Move all the data to the production folder in so far it\'s finished')
+        core.log.info(
+            "Move all the data to the production folder in so far it's finished"
+        )
+
         validate_run.move_all()
     else:
         core.log.info(f'Data sits at {core.config["context"]["base_folder"]}')
-    core.log.info(f'All done, bye bye')
+    core.log.info('All done, bye bye')
 
 
 if __name__ == '__main__':
