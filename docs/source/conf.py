@@ -209,4 +209,3 @@ def make_reference_example():
                            'reference', 'examples.rst'), 'w') as f:
         for l in examples:
             f.write(l)
-
