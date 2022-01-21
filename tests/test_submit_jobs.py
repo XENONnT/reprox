@@ -92,7 +92,7 @@ echo \
 
     def test_submit_jobs(self):
         self.write_test_log()
-        submit_jobs.submit_jobs(clear_old_logs=True)
+        submit_jobs.submit_jobs(clear_logs=True)
 
     @staticmethod
     def write_test_log():
