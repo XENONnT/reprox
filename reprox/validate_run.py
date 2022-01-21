@@ -148,7 +148,7 @@ def move_folder(path: str,
         - ValidationLevel.DEEP: <1> where we actually try loading the
             data with (requires a context)
     :param context: for when the validation_level is set to ValidationLevel.DEEP
-    :return: error string if an error occoured
+    :return: error string if an error occurred
     :raises FileExistsError: when there is already a folder at the destination path
     """
     validation = RunValidation(path, context=context, mode=validation_level)

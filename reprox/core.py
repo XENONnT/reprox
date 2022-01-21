@@ -49,7 +49,8 @@ straxer \
 echo Processing job ended
 """
 
-log_fn = os.path.join(config['context']['base_folder'], 'job_logs', '{run_id}.txt')
+log_folder = os.path.join(config['context']['base_folder'], 'job_logs')
+log_fn = os.path.join(log_folder, '{run_id}.txt')
 runs_csv = os.path.join(config['context']['base_folder'], config['context']['runs_to_do'])
 
 if not os.path.exists(os.path.split(log_fn)[0]):
@@ -201,6 +202,12 @@ def _include_processing_args(parser: argparse.ArgumentParser) -> argparse.Argume
         default=config['processing']['container_tag'],
         type=str,
         help='Container to use for the reprocessing. '
+    )
+    parser.add_argument(
+        '--clear_logs', '--clear-logs',
+        dest='clear_logs',
+        action='store_true',
+        help='When submitting new jobs, first clear the logs'
     )
     return parser
 

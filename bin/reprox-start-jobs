@@ -24,7 +24,8 @@ def main(targets: list, submit_kwargs: dict) -> None:
         submit_kwargs.setdefault(option, default)
 
     submit_jobs.submit_jobs(targets=targets,
-                            submit_kwargs=submit_kwargs
+                            submit_kwargs=submit_kwargs,
+                            clear_logs=args.clear_logs,
                             )
 
 

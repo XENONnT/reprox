@@ -22,6 +22,7 @@ def main(targets,
     core.log.info('Start jobs submission')
     submit_jobs.submit_jobs(
         targets=targets,
+        clear_logs=args.clear_logs,
         submit_kwargs=dict(
             context=args.context,
             package=args.package,
