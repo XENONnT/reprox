@@ -91,7 +91,13 @@ echo \
             shutil.rmtree(folder)
 
     def test_submit_jobs(self):
-        submit_jobs.submit_jobs()
+        self.write_test_log()
+        submit_jobs.submit_jobs(clear_old_logs=True)
+
+    @staticmethod
+    def write_test_log():
+        with open(core.log_fn.format(run_id='test'), 'a') as file:
+            file.write('Test')
 
     def test_move_all(self):
         submit_jobs.submit_jobs()
