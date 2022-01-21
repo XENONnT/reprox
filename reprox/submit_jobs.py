@@ -16,7 +16,7 @@ from reprox.process_job import ProcessingJob
 def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
                 targets: ty.Union[str, ty.List[str], ty.Tuple[str]] = (
                         'event_info', 'event_pattern_fit'),
-                break_if_n_jobs_left_running=5,
+                break_if_n_jobs_left_running=1,
                 sleep_s_when_queue_full=60,
                 submit_only=None,
                 known_partitions=core.config['processing']['allowed_partitions'].split(','),
@@ -67,6 +67,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
     core.log.info('Finished submitting jobs, let\'t keep updating the logs')
     _print_jobs_status(_jobs_status_summary(jobs))
     while n_jobs_running() > break_if_n_jobs_left_running:
+        print(n_jobs_running())
         _print_jobs_status(_jobs_status_summary(jobs))
         time.sleep(sleep_s_when_queue_full)
     return jobs
@@ -195,7 +196,7 @@ def _make_job(run_name: ty.List[str],
 
 
 def n_jobs_running():
-    return utilix.batchq.count_jobs(string='')
+    return utilix.batchq.count_jobs(string=':')
 
 
 def can_submit_more_jobs(nmax=core.config['processing']['max_jobs']):

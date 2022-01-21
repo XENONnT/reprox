@@ -60,6 +60,4 @@ if __name__ == '__main__':
         submit_only=args.submit_only,
         skip_find=args.skip_find
     )
-    core.log.warning(
-        'In order to move the data, do `bash nton/reprocessing/clean_and_move_to_production.sh`')
     core.log.info('Workflow done, bye bye')

@@ -231,7 +231,7 @@ def __stored_dependencies(self,
     if len(targets) > 1:
         # Multiple targets, do them all
         for dep in targets:
-            self.stored_dependencies(run_id,
+            self.__stored_dependencies(run_id,
                                      dep,
                                      check_forbidden=check_forbidden,
                                      _targets_stored=_targets_stored,
@@ -266,7 +266,7 @@ def __stored_dependencies(self,
         raise strax.DataNotAvailable(
             forbidden_warning.format(run_id=run_id, target=target, dep=target, ))
 
-    self.stored_dependencies(run_id,
+    self.__stored_dependencies(run_id,
                              target=dependencies,
                              check_forbidden=check_forbidden,
                              _targets_stored=_targets_stored,
