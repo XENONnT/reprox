@@ -195,11 +195,11 @@ def __get_source(self,
     """
     try:
         return {plugin_name for plugin_name, plugin_stored in
-                           self.__stored_dependencies(run_id=run_id,
-                                                      target=target,
-                                                      check_forbidden=check_forbidden
-                                                      ).items()
-                           if plugin_stored}
+                self.__stored_dependencies(run_id=run_id,
+                                           target=target,
+                                           check_forbidden=check_forbidden
+                                           ).items()
+                if plugin_stored}
     except strax.DataNotAvailable:
         return None
 
@@ -231,11 +231,11 @@ def __stored_dependencies(self,
     if len(targets) > 1:
         # Multiple targets, do them all
         for dep in targets:
-            self.stored_dependencies(run_id,
-                                     dep,
-                                     check_forbidden=check_forbidden,
-                                     _targets_stored=_targets_stored,
-                                     )
+            self.__stored_dependencies(run_id,
+                                       dep,
+                                       check_forbidden=check_forbidden,
+                                       _targets_stored=_targets_stored,
+                                       )
         return _targets_stored
 
     # Make sure we have the string not ('target',)
@@ -266,11 +266,11 @@ def __stored_dependencies(self,
         raise strax.DataNotAvailable(
             forbidden_warning.format(run_id=run_id, target=target, dep=target, ))
 
-    self.stored_dependencies(run_id,
-                             target=dependencies,
-                             check_forbidden=check_forbidden,
-                             _targets_stored=_targets_stored,
-                             )
+    self.__stored_dependencies(run_id,
+                               target=dependencies,
+                               check_forbidden=check_forbidden,
+                               _targets_stored=_targets_stored,
+                               )
     return _targets_stored
 
 

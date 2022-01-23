@@ -33,6 +33,7 @@ if __name__ == '__main__':
          context_kwargs=dict(context=args.context,
                              package=args.package,
                              config_kwargs=args.context_kwargs,
+                             **args.context_config_kwargs,
                              )
          )
     core.log.info('Determine data done, bye bye')

@@ -1,3 +1,4 @@
+import glob
 import json
 import time
 import os
@@ -14,12 +15,19 @@ from reprox.process_job import ProcessingJob
 
 
 def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
-                targets: ty.Union[str, ty.List[str], ty.Tuple[str]] = (
-                        'event_info', 'event_pattern_fit'),
-                break_if_n_jobs_left_running=5,
-                sleep_s_when_queue_full=60,
-                submit_only=None,
-                known_partitions=core.config['processing']['allowed_partitions'].split(','),
+                targets: ty.Union[
+                    str,
+                    ty.List[str],
+                    ty.Tuple[str],
+                ] = ('event_info', 'event_pattern_fit'),
+                break_if_n_jobs_left_running: ty.Union[None, int] = None,
+                clear_logs: bool = False,
+                sleep_s_when_queue_full: int = 60,
+                submit_only: ty.Union[None, int] = None,
+                known_partitions: ty.Union[
+                    tuple,
+                    list,
+                ] = core.config['processing']['allowed_partitions'].split(','),
                 ) -> ty.List[ProcessingJob]:
     """
     Submit jobs to the queue for the given options
@@ -29,6 +37,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
     :param targets: List of datatypes to produce
     :param break_if_n_jobs_left_running: threshold when to stop
         reporting the status
+    :param clear_logs: If true, clear the logs from previous jobs
     :param sleep_s_when_queue_full: sleep this many seconds if the
     :param submit_only: maximum number of jobs to submit
     :param known_partitions: list of partitions this user can submit to
@@ -43,6 +52,14 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
 
     if not os.path.exists(core.runs_csv):
         raise FileNotFoundError(f'{core.runs_csv} does not exist, run determine_data.py first!')
+
+    if break_if_n_jobs_left_running is None:
+        break_if_n_jobs_left_running = n_jobs_running()
+        core.log.info(f'Currently have {break_if_n_jobs_left_running} jobs running'
+                      f'We will keep updating the status until you have fewer than '
+                      f'{break_if_n_jobs_left_running} jobs running')
+    if clear_logs:
+        _clear_old_logs()
     runs = pd.read_csv(core.runs_csv)['name'].values
     runs = [f'{r:06}' for r in runs]
     if submit_only is not 0:
@@ -67,6 +84,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
     core.log.info('Finished submitting jobs, let\'t keep updating the logs')
     _print_jobs_status(_jobs_status_summary(jobs))
     while n_jobs_running() > break_if_n_jobs_left_running:
+        core.log.info(f"{n_jobs_running()} running jobs")
         _print_jobs_status(_jobs_status_summary(jobs))
         time.sleep(sleep_s_when_queue_full)
     return jobs
@@ -85,19 +103,12 @@ def _jobs_status_summary(jobs: ty.List[ProcessingJob]):
     """For a list of jobs, extract the status"""
     status = defaultdict(int)
     status['total'] = len(jobs)
-    core.log.info(f'Getting status of {len(jobs)}')
-    for j in tqdm(jobs,
-                  disable=not bool(core.config['display']['progress_bar']),
-                  desc='Job status check'
-                  ):
+    for j in jobs:
         status[j.get_run_job_state()] += 1
     if status['busy'] + status['queue'] < 5:
-        for j in tqdm(jobs,
-                      disable=not bool(core.config['display']['progress_bar']),
-                      desc='Print running jobs'
-                      ):
+        for j in jobs:
             if j.get_run_job_state() in ['busy', 'queue']:
-                core.log.info(f'Running {j}')
+                core.log.info(f'Running:\t{j}')
     return status
 
 
@@ -110,7 +121,8 @@ def _make_jobs(runs: ty.List[str],
                cpus_per_task: int = int(core.config['processing']['cpus_per_job']),
                overwrite_kr_targets: bool = True,
                container='xenonnt-development.simg',
-               include_config: ty.Union[None, dict] = None
+               include_config: ty.Union[None, dict] = None,
+               context_config_kwargs: ty.Union[None, dict] = None,
                ) -> ty.List[ProcessingJob]:
     if not isinstance(targets, str):
         # Targets should be a string, if not, let's try or fail miserably
@@ -145,7 +157,8 @@ def _make_job(run_name: ty.List[str],
               cpus_per_task: int = int(core.config['processing']['cpus_per_job']),
               overwrite_kr_targets: bool = True,
               container='xenonnt-development.simg',
-              include_config: ty.Union[None, dict] = None
+              include_config: ty.Union[None, dict] = None,
+              context_config_kwargs: ty.Union[None, dict] = None,
               ) -> ProcessingJob:
     rd = get_rundoc(run_name)
     source = rd.get('source', 'none')
@@ -162,9 +175,11 @@ def _make_job(run_name: ty.List[str],
 
     # Allow a different config to be set.
     if include_config is not None:
-        extra_commands = f'--context_kwargs {json.dumps(include_config)}'
+        extra_commands = f'--config_kwargs {json.dumps(include_config)}'
     else:
         extra_commands = ''
+    if context_config_kwargs is not None and context_config_kwargs:
+        extra_commands += f' --context_kwargs {json.dumps(context_config_kwargs)}'
     job_dir = os.path.join(core.config['context']['base_folder'], 'job_scripts')
     if not os.path.exists(job_dir):
         os.makedirs(job_dir)
@@ -195,7 +210,7 @@ def _make_job(run_name: ty.List[str],
 
 
 def n_jobs_running():
-    return utilix.batchq.count_jobs(string='')
+    return utilix.batchq.count_jobs(string=':')
 
 
 def can_submit_more_jobs(nmax=core.config['processing']['max_jobs']):
@@ -219,3 +234,11 @@ def cycle_queue(queues=('xenon1t', 'dali', 'broadwl')
 
 def get_rundoc(run_id):
     return utilix.rundb.xent_collection().find_one({'number': int(run_id)})
+
+
+def _clear_old_logs():
+    old_logs = glob.glob(os.path.join(core.log_folder, '*.txt'))
+    core.log.info(f'Clearing {len(old_logs)}-logfiles')
+    for old_log_file in old_logs:
+        core.log.debug(f'Clearing {old_log_file}')
+        os.remove(old_log_file)

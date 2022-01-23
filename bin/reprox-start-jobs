@@ -24,7 +24,8 @@ def main(targets: list, submit_kwargs: dict) -> None:
         submit_kwargs.setdefault(option, default)
 
     submit_jobs.submit_jobs(targets=targets,
-                            submit_kwargs=submit_kwargs
+                            submit_kwargs=submit_kwargs,
+                            clear_logs=args.clear_logs,
                             )
 
 
@@ -43,5 +44,6 @@ if __name__ == '__main__':
              cpus_per_task=int(args.cpu),
              container=f'xenonnt-{args.tag}.simg',
              include_config=args.context_kwargs,
+             context_config_kwargs=args.context_config_kwargs,
          ))
     core.log.info('Job submission done done, bye bye')

@@ -49,7 +49,8 @@ straxer \
 echo Processing job ended
 """
 
-log_fn = os.path.join(config['context']['base_folder'], 'job_logs', '{run_id}.txt')
+log_folder = os.path.join(config['context']['base_folder'], 'job_logs')
+log_fn = os.path.join(log_folder, '{run_id}.txt')
 runs_csv = os.path.join(config['context']['base_folder'], config['context']['runs_to_do'])
 
 if not os.path.exists(os.path.split(log_fn)[0]):
@@ -98,15 +99,26 @@ def parse_args(description='nton reprocessing on dali',
         help="Name of the context (should be in the package specified with --package)"
     )
     parser.add_argument(
-        '--context-kwargs', '--context_kwargs',
+        '--context-kwargs', '--context_kwargs', '--config',
         dest='context_kwargs',
         type=json.loads,
         default=None,
-        help='overwrite settings using a json file. For example:'
+        help='Overwrite st.config settings using a json file. For example:'
              '--context_kwargs '
              '\'{'
              '"s1_min_coincidence": 2,'
              '"s2_min_pmts": 10'
+             '}\''
+    )
+    parser.add_argument(
+        '--config-kwargs', '--config_kwargs',
+        dest='context_config_kwargs',
+        type=json.loads,
+        default={},
+        help='overwrite st.context_config settings using a json file. For example:'
+             '--config-kwargs '
+             '\'{'
+             '"output_folder": "./strax_data",'
              '}\''
     )
     parser.add_argument(
@@ -201,6 +213,12 @@ def _include_processing_args(parser: argparse.ArgumentParser) -> argparse.Argume
         default=config['processing']['container_tag'],
         type=str,
         help='Container to use for the reprocessing. '
+    )
+    parser.add_argument(
+        '--clear_logs', '--clear-logs',
+        dest='clear_logs',
+        action='store_true',
+        help='When submitting new jobs, first clear the logs'
     )
     return parser
 
