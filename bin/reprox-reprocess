@@ -8,6 +8,9 @@ def main(targets,
          context_kwargs,
          submit_only,
          skip_find,
+         clear_logs,
+         submit_kwargs,
+         move_after_workflow
          ):
     core.log.info('Starting workflow')
     if not os.path.exists(core.runs_csv) or not skip_find:
@@ -15,24 +18,18 @@ def main(targets,
         find_runs.find_data(
             targets=targets,
             exclude_from_invalid_cmt_version=cmt_version,
-            context_kwargs=context_kwargs
+            context_kwargs=context_kwargs,
         )
     else:
         core.log.info(f"Using already-created runlist at {core.runs_csv}")
     core.log.info('Start jobs submission')
     submit_jobs.submit_jobs(
         targets=targets,
-        clear_logs=args.clear_logs,
-        submit_kwargs=dict(
-            context=args.context,
-            package=args.package,
-            ram=int(args.ram),
-            cpus_per_task=int(args.cpu),
-            container=f'xenonnt-{args.tag}.simg',
-            include_config=args.context_kwargs),
+        clear_logs=clear_logs,
+        submit_kwargs=submit_kwargs,
         submit_only=submit_only
     )
-    if args.move_after_workflow:
+    if move_after_workflow:
         core.log.info(
             "Move all the data to the production folder in so far it's finished"
         )
@@ -56,9 +53,21 @@ if __name__ == '__main__':
         context_kwargs=dict(context=args.context,
                             package=args.package,
                             config_kwargs=args.context_kwargs,
+                            **args.context_config_kwargs
                             ),
         cmt_version=args.cmt_version,
         submit_only=args.submit_only,
-        skip_find=args.skip_find
+        skip_find=args.skip_find,
+        clear_logs=args.clear_logs,
+        submit_kwargs=dict(
+            context=args.context,
+            package=args.package,
+            ram=int(args.ram),
+            cpus_per_task=int(args.cpu),
+            container=f'xenonnt-{args.tag}.simg',
+            include_config=args.context_kwargs,
+            context_config_kwargs=args.context_config_kwargs,
+        ),
+        move_after_workflow=args.move_after_workflow,
     )
     core.log.info('Workflow done, bye bye')

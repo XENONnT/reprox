@@ -28,7 +28,6 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
                     tuple,
                     list,
                 ] = core.config['processing']['allowed_partitions'].split(','),
-
                 ) -> ty.List[ProcessingJob]:
     """
     Submit jobs to the queue for the given options
@@ -126,7 +125,8 @@ def _make_jobs(runs: ty.List[str],
                cpus_per_task: int = int(core.config['processing']['cpus_per_job']),
                overwrite_kr_targets: bool = True,
                container='xenonnt-development.simg',
-               include_config: ty.Union[None, dict] = None
+               include_config: ty.Union[None, dict] = None,
+               context_config_kwargs: ty.Union[None, dict] = None,
                ) -> ty.List[ProcessingJob]:
     if not isinstance(targets, str):
         # Targets should be a string, if not, let's try or fail miserably
@@ -161,7 +161,8 @@ def _make_job(run_name: ty.List[str],
               cpus_per_task: int = int(core.config['processing']['cpus_per_job']),
               overwrite_kr_targets: bool = True,
               container='xenonnt-development.simg',
-              include_config: ty.Union[None, dict] = None
+              include_config: ty.Union[None, dict] = None,
+              context_config_kwargs: ty.Union[None, dict] = None,
               ) -> ProcessingJob:
     rd = get_rundoc(run_name)
     source = rd.get('source', 'none')
@@ -178,9 +179,11 @@ def _make_job(run_name: ty.List[str],
 
     # Allow a different config to be set.
     if include_config is not None:
-        extra_commands = f'--context_kwargs {json.dumps(include_config)}'
+        extra_commands = f'--config_kwargs {json.dumps(include_config)}'
     else:
         extra_commands = ''
+    if context_config_kwargs is not None and context_config_kwargs:
+        extra_commands += f' --context_kwargs {json.dumps(context_config_kwargs)}'
     job_dir = os.path.join(core.config['context']['base_folder'], 'job_scripts')
     if not os.path.exists(job_dir):
         os.makedirs(job_dir)

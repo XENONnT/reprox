@@ -99,15 +99,26 @@ def parse_args(description='nton reprocessing on dali',
         help="Name of the context (should be in the package specified with --package)"
     )
     parser.add_argument(
-        '--context-kwargs', '--context_kwargs',
+        '--context-kwargs', '--context_kwargs', '--config',
         dest='context_kwargs',
         type=json.loads,
         default=None,
-        help='overwrite settings using a json file. For example:'
+        help='Overwrite st.config settings using a json file. For example:'
              '--context_kwargs '
              '\'{'
              '"s1_min_coincidence": 2,'
              '"s2_min_pmts": 10'
+             '}\''
+    )
+    parser.add_argument(
+        '--config-kwargs', '--config_kwargs',
+        dest='context_config_kwargs',
+        type=json.loads,
+        default={},
+        help='overwrite st.context_config settings using a json file. For example:'
+             '--config-kwargs '
+             '\'{'
+             '"output_folder": "./strax_data",'
              '}\''
     )
     parser.add_argument(
