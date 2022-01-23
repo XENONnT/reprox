@@ -103,16 +103,12 @@ def _jobs_status_summary(jobs: ty.List[ProcessingJob]):
     """For a list of jobs, extract the status"""
     status = defaultdict(int)
     status['total'] = len(jobs)
-    core.log.info(f'Getting status of {len(jobs)}')
     for j in jobs:
         status[j.get_run_job_state()] += 1
     if status['busy'] + status['queue'] < 5:
-        for j in tqdm(jobs,
-                      disable=not bool(core.config['display']['progress_bar']),
-                      desc='Print running jobs'
-                      ):
+        for j in jobs:
             if j.get_run_job_state() in ['busy', 'queue']:
-                core.log.info(f'Running {j}')
+                core.log.info(f'Running:\t{j}')
     return status
 
 
