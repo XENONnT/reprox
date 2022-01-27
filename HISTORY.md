@@ -1,3 +1,9 @@
+0.1.0 / 2022-01-27
+------------------
+- Finetuning after testing (#18)
+- requirement updates (#22)
+
+
 0.0.3 / 2022-01-17
 ------------------
 - Bugfix data finding (#17)
