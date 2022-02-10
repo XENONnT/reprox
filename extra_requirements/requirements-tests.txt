@@ -1,7 +1,7 @@
 coverage==6.3
 coveralls==3.3.1
 flake8==4.0.1
-hypothesis==6.36.0
+hypothesis==6.36.1
 matplotlib==3.5.1
 numpy==1.21.0
 pandas==1.4.0
