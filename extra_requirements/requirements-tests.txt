@@ -7,5 +7,5 @@ numpy==1.21.0
 pandas==1.4.0
 pytest==6.2.5
 strax==1.1.6
-straxen==1.2.6
+straxen==1.2.7
 utilix==0.6.6
