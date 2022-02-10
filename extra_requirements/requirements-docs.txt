@@ -7,7 +7,7 @@ m2r==0.2.1
 nbsphinx==0.8.8
 numpy==1.21.0
 recommonmark==0.7.1
-scipy==1.7.3
+scipy==1.8.0
 sphinx_rtd_theme==1.0.0
 sphinx==4.4.0
 sphinxcontrib_applehelp==1.0.2
