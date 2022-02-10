@@ -1,11 +1,11 @@
-coverage==6.3
+coverage==6.3.1
 coveralls==3.3.1
 flake8==4.0.1
-hypothesis==6.36.0
+hypothesis==6.36.1
 matplotlib==3.5.1
-numpy==1.21.0
+numpy==1.21.2
 pandas==1.4.0
-pytest==6.2.5
+pytest==7.0.0
 strax==1.1.6
-straxen==1.2.6
+straxen==1.2.7
 utilix==0.6.6
