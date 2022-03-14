@@ -74,12 +74,7 @@ jobs:
           coverage run --source=reprox,bin setup.py test -v
           coveralls --service=github
           echo ${{ matrix.straxen_version }}
-          if [${{ matrix.straxen_version }} != 'latest']
-          then
-            pip install straxen==${{ matrix.straxen_version }}
-            coverage run --source=reprox,bin setup.py test -v
-            coveralls --service=github
-          fi
+          bash .github/scripts.test_old_version.sh ${{ matrix.straxen_version }}
       # Done
       - name: goodbye
         run: echo "tests done, bye bye"
