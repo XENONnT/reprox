@@ -62,7 +62,8 @@ jobs:
         # This is running a normal test
         if: matrix.test == 'pytest'
         run: |
-          pytest -vs --log-level=DEBUG --durations 0
+          coverage run --source=reprox,bin -m pytest -v --log-level=DEBUG --durations 0
+          coveralls --service=github
       - name: Coveralls
         # Make the coverage report and upload
         env:
