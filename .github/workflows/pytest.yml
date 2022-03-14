@@ -73,9 +73,9 @@ jobs:
         run: |
           coverage run --source=reprox,bin setup.py test -v
           coveralls --service=github
+          echo ${{ matrix.straxen_version }}
           if [${{ matrix.straxen_version }} != 'latest']
           then
-            echo ${{ matrix.straxen_version }}
             pip install straxen==${{ matrix.straxen_version }}
             coverage run --source=reprox,bin setup.py test -v
             coveralls --service=github
