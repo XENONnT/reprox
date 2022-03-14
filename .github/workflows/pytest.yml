@@ -73,6 +73,9 @@ jobs:
         run: |
           coverage run --source=reprox,bin setup.py test -v
           coveralls --service=github
+          pip install ${{ matrix.straxen_version }}
+          coverage run --source=reprox,bin setup.py test -v
+          coveralls --service=github
       # Done
       - name: goodbye
         run: echo "tests done, bye bye"
