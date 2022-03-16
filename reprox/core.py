@@ -61,13 +61,13 @@ def get_context(package=config['context']['package'],
                 context=config['context']['context'],
                 output_folder=os.path.join(config['context']['base_folder'], 'strax_data'),
                 config_kwargs: typing.Union[None, dict] = None,
-                _minimum_run_number=int(config['context']['minimum_run_number']),
-                _maximum_run_number=None,
+                minimum_run_number=int(config['context']['minimum_run_number']),
+                maximum_run_number=None,
                 ):
     module = importlib.import_module(f'{package}.contexts')
     st = getattr(module, context)(output_folder=output_folder,
-                                  _minimum_run_number=_minimum_run_number,
-                                  _maximum_run_number=_maximum_run_number,
+                                  minimum_run_number=minimum_run_number,
+                                  maximum_run_number=maximum_run_number,
                                   )
     if config_kwargs is not None:
         log.warning(f'Updating the context with the following config {config_kwargs}')
