@@ -127,8 +127,8 @@ class RunValidation:
 
 def change_ownership(path, group):
     shutil.chown(path, group=group)
-    # read write execute
-    os.chmod(path, 0o777)
+    # Change to drwxrwxr-x
+    os.chmod(path, 0o775)
 
 
 def move_folder(path: str,
