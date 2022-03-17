@@ -205,6 +205,8 @@ def _make_job(run_name: ty.List[str],
             cpus_per_task=cpus_per_task,  # Almost never an issue, better ask for more RAM
             container=container,
             sbatch_file=sbatch_file,
+            # TODO - fix hardcoding
+            hours=2,
         ),
     )
 
