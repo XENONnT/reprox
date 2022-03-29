@@ -12,7 +12,9 @@ def find_data(
         exclude_from_invalid_cmt_version: ty.Union[bool, str] = (
                 core.config['context']['cmt_version']),
         context_kwargs: ty.Optional[dict] = None,
-        keep_detectors: ty.Union[str, tuple, list] = ('tpc',),
+        keep_detectors:
+        ty.Union[str, tuple, list] = core.config['context']['include_detectors'].split(','),
+        ignore_runs=tuple()
 ) -> None:
     """
     Determine which data to process, see determine_data_to_reprocess
@@ -30,6 +32,7 @@ def find_data(
         targets=targets,
         exclude_from_invalid_cmt=exclude_from_invalid_cmt_version,
         keep_detectors=keep_detectors,
+        ignore_runs=ignore_runs,
     )
     save_as = core.runs_csv
     if len(runs):
@@ -49,7 +52,8 @@ def determine_data_to_reprocess(
                 'LED', 'noise', 'pmtap', 'pmtgain', 'exttrig'),
         keep_detectors: ty.Union[str, tuple, list] = ('tpc',),
         exclude_from_invalid_cmt: ty.Optional[str] = core.config['context']['cmt_version'],
-        _max_workers: int = 50
+        _max_workers: int = 50,
+        ignore_runs=tuple(),
 ) -> pd.DataFrame:
     """
     Find data that we can process. This data needs to:
@@ -94,6 +98,11 @@ def determine_data_to_reprocess(
     core.log.info(f"Found {np.sum(special_mode_mask)}/{len(runs)} special modes ({special_modes}) "
                   f"Leave these alone for now.")
     runs = runs[~special_mode_mask]
+
+    if ignore_runs:
+        core.log.info(f'Ignoring runs: {ignore_runs}')
+        ignore = np.in1d(runs['number'], ignore_runs)
+        runs = runs[~ignore]
 
     core.log.info('Find already stored runs')
     already_done = st.select_runs(available=targets)
