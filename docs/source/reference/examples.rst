@@ -1,7 +1,11 @@
 Reprocessing on dali
 ====================
 
-Process data in so far available on dali with the current container
+Process data in so far available on dali with the current container.
+
+Important notice: this package is meant for processing high level data
+(greater than ``peaklets``) as it relies on readily available data on dali.
+
 
 Logic
 -----
