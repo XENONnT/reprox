@@ -9,6 +9,8 @@ import grp
 import json
 import typing
 import inspect
+from strax import to_str_tuple
+
 
 reprox_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -128,6 +130,13 @@ def parse_args(description='nton reprocessing on dali',
         help='Target final data type to produce. Can be a list for multicore mode.'
     )
     parser.add_argument(
+        '--ignore_runs', '--ignore-runs',
+        dest='ignore_runs',
+        default=None,
+        nargs='*',
+        help='List of run ids to ignore'
+    )
+    parser.add_argument(
         '--force-non-admin', '--force_non_admin',
         action='store_true',
         dest='force_non_admin',
@@ -148,6 +157,9 @@ def parse_args(description='nton reprocessing on dali',
             f'{os.getlogin()}, you are not an admin so you probably don\'t'
             f' want to do a full reprocessing. In case you know what you are'
             f' doing add the "--force-non-admin" flag to you instructions')
+    if args.ignore_runs is not None:
+        args.ignore_runs = [f'{int(r):06}' for r in to_str_tuple(args.ignore_runs)]
+        log.warning(f'Ignoring {args.ignore_runs}')
     return args
 
 
