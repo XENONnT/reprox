@@ -243,7 +243,8 @@ def check_user_is_admin(admin_group='xenon1t-admins'):
 def log_versions():
     """Log versions (nested import makes the arg parsing quick)"""
     import straxen
-    log.warning(straxen.print_versions(return_string=True),
+    log.warning(straxen.print_versions('strax straxen cutax reprox'.split(), 
+                                       return_string=True),
                 )
 
 
