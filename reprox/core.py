@@ -57,6 +57,21 @@ if not os.path.exists(os.path.split(log_fn)[0]):
     os.mkdir(os.path.split(log_fn)[0])
 
 
+def format_context_kwargs(minimum_run_number, maximum_run_number):
+    import straxen
+    # All contexts inherit from this function!
+    signature = inspect.signature(straxen.contexts.xenonnt_online)
+    pars = signature.parameters
+    if 'minimum_run_number' in pars and 'maximum_run_number' in pars:
+        return dict(minimum_run_number=minimum_run_number,
+                    maximum_run_number=maximum_run_number
+                    )
+    # old format!
+    return dict(_minimum_run_number=minimum_run_number,
+                _maximum_run_number=maximum_run_number
+                )
+
+
 def get_context(package=config['context']['package'],
                 context=config['context']['context'],
                 output_folder=os.path.join(config['context']['base_folder'], 'strax_data'),
@@ -65,9 +80,12 @@ def get_context(package=config['context']['package'],
                 maximum_run_number=None,
                 ):
     module = importlib.import_module(f'{package}.contexts')
+
     st = getattr(module, context)(output_folder=output_folder,
-                                  minimum_run_number=minimum_run_number,
-                                  maximum_run_number=maximum_run_number,
+                                  **format_context_kwargs(
+                                      minimum_run_number=minimum_run_number,
+                                      maximum_run_number=maximum_run_number,
+                                  ),
                                   )
     if config_kwargs is not None:
         log.warning(f'Updating the context with the following config {config_kwargs}')
