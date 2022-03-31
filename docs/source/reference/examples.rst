@@ -170,3 +170,20 @@ One might want to run with a different tag as so
        --cpu 2  \
        --move-after-workflow \
        --tag 2021.12.2
+
+Downloading low-level data
+--------------------------
+This is usually much better done in outsource, however if you just need a few runs you can download required data on the fly like this:
+
+.. code-block:: bash
+
+    MY_TAG=2022.03.5;
+    # Find the data somehow (preferably just one or two runs)
+    reprox-start-jobs \
+        --package straxen \
+        --context xenonnt_online \
+        --targets peaklets peak_basics peak_positions_cnn event_info event_pattern_fit \
+        --ram 10000 \
+        --cpu 2 \
+        --tag $MY_TAG \
+        --config-kwargs '{"include_rucio_remote": 1, "download_heavy": 1}'
