@@ -9,6 +9,8 @@ import grp
 import json
 import typing
 import inspect
+from strax import to_str_tuple
+
 
 reprox_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -57,17 +59,35 @@ if not os.path.exists(os.path.split(log_fn)[0]):
     os.mkdir(os.path.split(log_fn)[0])
 
 
+def format_context_kwargs(minimum_run_number, maximum_run_number):
+    import straxen
+    # All contexts inherit from this function!
+    signature = inspect.signature(straxen.contexts.xenonnt_online)
+    pars = signature.parameters
+    if 'minimum_run_number' in pars and 'maximum_run_number' in pars:
+        return dict(minimum_run_number=minimum_run_number,
+                    maximum_run_number=maximum_run_number
+                    )
+    # old format!
+    return dict(_minimum_run_number=minimum_run_number,
+                _maximum_run_number=maximum_run_number
+                )
+
+
 def get_context(package=config['context']['package'],
                 context=config['context']['context'],
                 output_folder=os.path.join(config['context']['base_folder'], 'strax_data'),
                 config_kwargs: typing.Union[None, dict] = None,
-                _minimum_run_number=int(config['context']['minimum_run_number']),
-                _maximum_run_number=None,
+                minimum_run_number=int(config['context']['minimum_run_number']),
+                maximum_run_number=None,
                 ):
     module = importlib.import_module(f'{package}.contexts')
+
     st = getattr(module, context)(output_folder=output_folder,
-                                  _minimum_run_number=_minimum_run_number,
-                                  _maximum_run_number=_maximum_run_number,
+                                  **format_context_kwargs(
+                                      minimum_run_number=minimum_run_number,
+                                      maximum_run_number=maximum_run_number,
+                                  ),
                                   )
     if config_kwargs is not None:
         log.warning(f'Updating the context with the following config {config_kwargs}')
@@ -128,6 +148,13 @@ def parse_args(description='nton reprocessing on dali',
         help='Target final data type to produce. Can be a list for multicore mode.'
     )
     parser.add_argument(
+        '--ignore_runs', '--ignore-runs',
+        dest='ignore_runs',
+        default=None,
+        nargs='*',
+        help='List of run ids to ignore'
+    )
+    parser.add_argument(
         '--force-non-admin', '--force_non_admin',
         action='store_true',
         dest='force_non_admin',
@@ -148,6 +175,9 @@ def parse_args(description='nton reprocessing on dali',
             f'{os.getlogin()}, you are not an admin so you probably don\'t'
             f' want to do a full reprocessing. In case you know what you are'
             f' doing add the "--force-non-admin" flag to you instructions')
+    if args.ignore_runs is not None:
+        args.ignore_runs = [f'{int(r):06}' for r in to_str_tuple(args.ignore_runs)]
+        log.warning(f'Ignoring {args.ignore_runs}')
     return args
 
 
@@ -231,7 +261,8 @@ def check_user_is_admin(admin_group='xenon1t-admins'):
 def log_versions():
     """Log versions (nested import makes the arg parsing quick)"""
     import straxen
-    log.warning(straxen.print_versions(return_string=True),
+    log.warning(straxen.print_versions('strax straxen cutax reprox'.split(), 
+                                       return_string=True),
                 )
 
 

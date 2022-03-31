@@ -1,3 +1,13 @@
+0.2.0 / 2022-03-29
+------------------
+ - Fix deprecation warning (#50)
+ - Add timeout to jobs (#51)
+ - print reprox version (#52)
+ - Fix permissions (#49)
+ - Update coverage (#47)
+ - Run straxen version on coveralls (#48)
+ - Versions (#44, #45, #33, #43)
+
 0.1.0 / 2022-01-27
 ------------------
 - Finetuning after testing (#18)

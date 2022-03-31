@@ -160,6 +160,7 @@ def _make_job(run_name: ty.List[str],
               container='xenonnt-development.simg',
               include_config: ty.Union[None, dict] = None,
               context_config_kwargs: ty.Union[None, dict] = None,
+              job_timeout_hours=int(core.config['processing']['job_timeout_hours'])
               ) -> ProcessingJob:
     rd = get_rundoc(run_name)
     source = rd.get('source', 'none')
@@ -206,8 +207,7 @@ def _make_job(run_name: ty.List[str],
             cpus_per_task=cpus_per_task,  # Almost never an issue, better ask for more RAM
             container=container,
             sbatch_file=sbatch_file,
-            # TODO - fix hardcoding
-            hours=6,
+            job_timeout_hours = job_timeout_hours,
         ),
     )
 

@@ -5,6 +5,7 @@ from reprox import find_runs, core
 def main(targets,
          exclude_from_invalid_cmt_version,
          context_kwargs=None,
+         ignore_runs=tuple(),
          ) -> None:
     """
     Determine data to process
@@ -18,6 +19,7 @@ def main(targets,
         exclude_from_invalid_cmt_version=exclude_from_invalid_cmt_version,
         context_kwargs=context_kwargs,
         keep_detectors=args.detectors,
+        ignore_runs=ignore_runs,
     )
 
 
@@ -34,6 +36,7 @@ if __name__ == '__main__':
                              package=args.package,
                              config_kwargs=args.context_kwargs,
                              **args.context_config_kwargs,
-                             )
+                             ),
+         ignore_runs=args.ignore_runs,
          )
     core.log.info('Determine data done, bye bye')
