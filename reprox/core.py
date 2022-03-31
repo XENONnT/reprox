@@ -46,7 +46,7 @@ straxer \
     --target {target} \
     --context {context} \
     --package {package} \
-    --timeout {timeout} 
+    --timeout {timeout} \
     {extra_options}
 echo Processing job ended
 """

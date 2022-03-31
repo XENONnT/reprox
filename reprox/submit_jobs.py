@@ -49,7 +49,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
                   )
     if submit_kwargs is not None:
         kwargs.update(submit_kwargs)
-
+    print(kwargs)
     if not os.path.exists(core.runs_csv):
         raise FileNotFoundError(f'{core.runs_csv} does not exist, run determine_data.py first!')
 
@@ -142,7 +142,8 @@ def _make_jobs(runs: ty.List[str],
                         cpus_per_task=cpus_per_task,
                         overwrite_kr_targets=overwrite_kr_targets,
                         container=container,
-                        include_config=include_config
+                        include_config=include_config,
+                        context_config_kwargs=context_config_kwargs,
                         )
         jobs.append(job)
     return jobs
@@ -174,13 +175,14 @@ def _make_job(run_name: ty.List[str],
     else:
         submit_ram = ram
 
-    # Allow a different config to be set.
+    # Allow a different config to be set. NB! These \' are needed to
+    # render valid JSON instructions to straxer!
     if include_config is not None:
-        extra_commands = f'--config_kwargs {json.dumps(include_config)}'
+        extra_commands = '--config_kwargs \'' + json.dumps(include_config) + '\"'
     else:
         extra_commands = ''
     if context_config_kwargs is not None and context_config_kwargs:
-        extra_commands += f' --context_kwargs {json.dumps(context_config_kwargs)}'
+        extra_commands += ' --context_kwargs \'' + json.dumps(context_config_kwargs) + '\''
     job_dir = os.path.join(core.config['context']['base_folder'], 'job_scripts')
     if not os.path.exists(job_dir):
         os.makedirs(job_dir)
@@ -206,7 +208,7 @@ def _make_job(run_name: ty.List[str],
             cpus_per_task=cpus_per_task,  # Almost never an issue, better ask for more RAM
             container=container,
             sbatch_file=sbatch_file,
-            job_timeout_hours = job_timeout_hours,
+            job_timeout_hours=job_timeout_hours,
         ),
     )
 
