@@ -41,7 +41,7 @@ log = logging.getLogger('reprocessing')
 
 command = """
 cd {base_folder}
-python /home/angevaare/software/straxen/bin/straxer \
+straxer \
     {run_name} \
     --target {target} \
     --context {context} \
