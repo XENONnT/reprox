@@ -39,12 +39,12 @@ log = logging.getLogger('reprocessing')
 
 command = """
 cd {base_folder}
-straxer \
+python /home/angevaare/software/straxen/bin/straxer \
     {run_name} \
     --target {target} \
     --context {context} \
     --package {package} \
-    --timeout {timeout} 
+    --timeout {timeout} \
     {extra_options}
 echo Processing job ended
 """
