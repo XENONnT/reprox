@@ -174,8 +174,9 @@ def _make_job(run_name: ty.List[str],
         submit_ram = ram * float(core.config['processing']['ram_multiplier_for_calibrations'])
     else:
         submit_ram = ram
-    
-    # Allow a different config to be set.
+
+    # Allow a different config to be set. NB! These \' are needed to
+    # render valid JSON instructions to straxer!
     if include_config is not None:
         extra_commands = '--config_kwargs \'' + json.dumps(include_config) + '\"'
     else:
@@ -207,7 +208,7 @@ def _make_job(run_name: ty.List[str],
             cpus_per_task=cpus_per_task,  # Almost never an issue, better ask for more RAM
             container=container,
             sbatch_file=sbatch_file,
-            job_timeout_hours = job_timeout_hours,
+            job_timeout_hours=job_timeout_hours,
         ),
     )
 
