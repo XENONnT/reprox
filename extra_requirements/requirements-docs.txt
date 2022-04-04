@@ -5,7 +5,7 @@ gitpython==3.1.27
 graphviz==0.19.1
 m2r==0.2.1
 nbsphinx==0.8.8
-numpy==1.21.0
+numpy==1.22.3
 recommonmark==0.7.1
 scipy==1.7.3
 sphinx_rtd_theme==1.0.0
