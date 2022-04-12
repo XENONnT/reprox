@@ -23,7 +23,7 @@ tests_requires = open_requirements('extra_requirements/requirements-tests.txt')
 doc_requires = open_requirements('extra_requirements/requirements-docs.txt')
 
 setuptools.setup(name='reprox',
-                 version='0.2.1',
+                 version='0.2.2',
                  description='Reprocessing for XENONnT',
                  author='J. R. Angevaare',
                  url='https://github.com/XENONnT/reprox',
