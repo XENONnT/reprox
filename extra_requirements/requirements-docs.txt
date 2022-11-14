@@ -4,7 +4,7 @@ commonmark==0.9.1
 gitpython==3.1.27
 graphviz==0.19.1
 m2r==0.2.1
-nbsphinx==0.8.9
+nbsphinx==0.8.10
 numpy==1.21.0
 recommonmark==0.7.1
 scipy==1.7.3
