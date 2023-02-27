@@ -1,3 +1,3 @@
 git+https://github.com/XENONnT/ax_env
 strax==1.4.1
-straxen==2.0.4
+straxen==2.0.5
