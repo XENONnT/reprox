@@ -9,8 +9,6 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-    assignees:
-      - JoranAngevaare
   # Maintain the requirements requirements folder
   - package-ecosystem: "pip"
     directory: "/extra_requirements"
@@ -21,5 +19,3 @@ updates:
     # to pip against the `develop` branch
     target-branch: "master"
     open-pull-requests-limit: 15
-    assignees:
-      - JoranAngevaare
