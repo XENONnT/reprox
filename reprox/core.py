@@ -96,7 +96,7 @@ def get_context(package=config['context']['package'],
     return st
 
 
-def parse_args(description='nton reprocessing on dali',
+def parse_args(description='nton reprocessing on midway',
                include_find_args=False,
                include_processing_args=False,
                include_workflow_args=False,

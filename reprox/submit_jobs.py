@@ -221,7 +221,7 @@ def can_submit_more_jobs(nmax=core.config['processing']['max_jobs']):
     return n_jobs_running() < int(nmax)
 
 
-def cycle_queue(queues=('xenon1t', 'dali', 'broadwl')
+def cycle_queue(queues=('xenon1t', 'broadwl')
                 ):
     res = {}
     cmd = f'squeue -u {os.environ["USER"]}'

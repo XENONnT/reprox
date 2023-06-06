@@ -74,7 +74,7 @@ def determine_data_to_reprocess(
     :param _max_workers: Max workers for finding the stored data
     :return:
     """
-    runs = st.select_runs(exclude_tags=('messy', 'abandoned'))
+    runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'))
     core.log.info(f"Found {len(runs)} runs in total")
 
     if exclude_from_invalid_cmt:
