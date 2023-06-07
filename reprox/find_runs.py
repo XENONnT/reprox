@@ -29,7 +29,6 @@ def find_data(
     if context_kwargs is None:
         context_kwargs = {}
     
-    breakpoint()
     st = core.get_context(**context_kwargs)
     _append_storage(st, storage_patches)
 
