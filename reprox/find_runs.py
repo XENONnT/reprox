@@ -85,8 +85,13 @@ def determine_data_to_reprocess(
     else:
         run_mode = run_mode.split(',')
 
-    runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'), 
-                          run_mode=run_mode,)
+    # In case select_runs failed due to weird reasons, try again
+    try:
+        runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'), 
+                            run_mode=run_mode,)
+    except:
+        runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'), 
+                            run_mode=run_mode,)
     core.log.info(f"Found {len(runs)} runs in total")
 
     if exclude_from_invalid_cmt:
@@ -117,9 +122,15 @@ def determine_data_to_reprocess(
         runs = runs[~ignore]
 
     core.log.info('Find already stored runs')
-    already_done = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'),
-                                  available=targets,
-                                  run_mode=run_mode,)
+    # In case select_runs failed due to weird reasons, try again
+    try:
+        already_done = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'),
+                                      available=targets,
+                                      run_mode=run_mode,)
+    except:
+        already_done = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'),
+                                      available=targets,
+                                      run_mode=run_mode,)
     already_done = np.in1d(runs['number'], already_done['number'])
     core.log.info(f"Found {np.sum(already_done)}/{len(runs)} runs where "
                   f"the data is already stored")
