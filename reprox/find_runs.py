@@ -12,6 +12,7 @@ def find_data(
         exclude_from_invalid_cmt_version: ty.Union[bool, str] = (
                 core.config['context']['cmt_version']),
         context_kwargs: ty.Optional[dict] = None,
+        storage_patches: ty.Union[str, tuple, list] = core.config['context']['storage_patches'],
         keep_detectors:
         ty.Union[str, tuple, list] = core.config['context']['include_detectors'].split(','),
         ignore_runs=tuple()
@@ -21,12 +22,15 @@ def find_data(
     :param targets: List of targets to process
     :param exclude_from_invalid_cmt_version: A CMT version (optional) to
         exclude runs that lie outside it's validity from
+    :param storage_patches: addtional storage directories to append
     :param context_kwargs: Any context kwargs
     :return:
     """
     if context_kwargs is None:
         context_kwargs = {}
     st = core.get_context(**context_kwargs)
+    _append_storage(st, storage_patches)
+    
     runs = determine_data_to_reprocess(
         st=st,
         targets=targets,
@@ -131,6 +135,25 @@ def determine_data_to_reprocess(
     runs = runs[can_make]
     core.log.info(f"That leaves {len(runs)} runs to work on.")
     return runs
+
+
+def _append_storage(
+        st:strax.Context,
+        storage_patches: ty.Union[str, tuple, list],
+) ->None:
+    """
+    Append storage patches to the context
+    
+    :param st: Context to run with
+    :param storage_patches: addtional storage directories to append
+    """
+    if storage_patches is not None:
+        if isinstance(storage_patches, str):
+            storage_patches = [storage_patches]
+        for sp in storage_patches:
+            st.storage = st.storage.append(
+                strax.DataDirectory(sp, readonly=True)
+            )
 
 
 def _get_detectors(runs):
