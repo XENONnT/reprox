@@ -85,7 +85,7 @@ def get_context(package=config['context']['package'],
 
     # Determine minimum and maximum run number
     if config_kwargs is not None:
-        if 'minimum_run_number' in config_kwargs.kets():
+        if 'minimum_run_number' in config_kwargs.keys():
             minimum_run_number_ck = config_kwargs['minimum_run_number']
             if (minimum_run_number is not None) and (minimum_run_number < minimum_run_number_ck):
                 log.warning(f'Overwriting minimum_run_number from {minimum_run_number} '
