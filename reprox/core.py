@@ -83,6 +83,21 @@ def get_context(package=config['context']['package'],
                 ):
     module = importlib.import_module(f'{package}.contexts')
 
+    # Determine minimum and maximum run number
+    if config_kwargs is not None:
+        if 'minimum_run_number' in config_kwargs.keys():
+            minimum_run_number_ck = config_kwargs['minimum_run_number']
+            if (minimum_run_number is not None) and (minimum_run_number < minimum_run_number_ck):
+                log.warning(f'Overwriting minimum_run_number from {minimum_run_number} '
+                            f'to {minimum_run_number_ck}, as it is set in the config')
+                minimum_run_number = minimum_run_number_ck
+        if 'maximum_run_number' in config_kwargs.keys():
+            maximum_run_number_ck = config_kwargs['maximum_run_number']
+            if (maximum_run_number is not None) and (maximum_run_number > maximum_run_number_ck):
+                log.warning(f'Overwriting maximum_run_number from {maximum_run_number} '
+                            f'to {maximum_run_number_ck}, as it is set in the config')
+                maximum_run_number = maximum_run_number_ck
+
     st = getattr(module, context)(output_folder=output_folder,
                                   **format_context_kwargs(
                                       minimum_run_number=minimum_run_number,
