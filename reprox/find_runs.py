@@ -79,7 +79,8 @@ def determine_data_to_reprocess(
     :param _max_workers: Max workers for finding the stored data
     :return:
     """
-    runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'))
+    runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'), 
+                          run_mode=core.config['context']['run_mode'],)
     core.log.info(f"Found {len(runs)} runs in total")
 
     if exclude_from_invalid_cmt:
@@ -110,7 +111,8 @@ def determine_data_to_reprocess(
         runs = runs[~ignore]
 
     core.log.info('Find already stored runs')
-    already_done = st.select_runs(available=targets)
+    already_done = st.select_runs(available=targets,
+                                  run_mode=core.config['context']['run_mode'])
     already_done = np.in1d(runs['number'], already_done['number'])
     core.log.info(f"Found {np.sum(already_done)}/{len(runs)} runs where "
                   f"the data is already stored")
