@@ -85,7 +85,6 @@ def determine_data_to_reprocess(
     else:
         run_mode = run_mode.split(',')
 
-    breakpoint()
     runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'), 
                           run_mode=run_mode,)
     core.log.info(f"Found {len(runs)} runs in total")
