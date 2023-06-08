@@ -9,7 +9,6 @@ from collections import defaultdict
 import pandas as pd
 import utilix
 from strax.utils import tqdm
-from utilix import batchq
 from reprox import core
 from reprox.process_job import ProcessingJob
 
