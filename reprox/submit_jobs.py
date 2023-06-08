@@ -9,6 +9,7 @@ from collections import defaultdict
 import pandas as pd
 import utilix
 from strax.utils import tqdm
+from utilix import batchq
 from reprox import core
 from reprox.process_job import ProcessingJob
 
@@ -70,7 +71,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
         targets=targets,
         **kwargs,
     )
-
+    breakpoint()
     for i, job in enumerate(jobs):
         while not can_submit_more_jobs(core.config['processing']['max_jobs']):
             _print_jobs_status(_jobs_status_summary(jobs))
