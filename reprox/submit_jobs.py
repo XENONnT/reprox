@@ -66,7 +66,6 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
         runs = runs[:submit_only]
         core.log.info(f'Passed submit_only={submit_only}. Only processing a subset of runs')
 
-    breakpoint()
     jobs = _make_jobs(
         runs=runs,
         targets=targets,
