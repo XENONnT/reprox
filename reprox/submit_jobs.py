@@ -78,6 +78,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
             time.sleep(sleep_s_when_queue_full)
         if i % 10 == 0 or i == 0:
             partition = cycle_queue(queues=known_partitions)
+        #breakpoint()
         job.submit(**dict(partition=partition,
                           qos=partition, ))
 
@@ -177,6 +178,7 @@ def _make_job(run_name: ty.List[str],
 
     # Allow a different config to be set. NB! These \' are needed to
     # render valid JSON instructions to straxer!
+    #breakpoint()
     if include_config is not None:
         extra_commands = "--config_kwargs \'" + json.dumps(include_config) + "\'"
     else:

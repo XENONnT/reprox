@@ -134,24 +134,24 @@ def parse_args(description='nton reprocessing on midway',
         help="Name of the context (should be in the package specified with --package)"
     )
     parser.add_argument(
-        '--context-kwargs', '--context_kwargs', '--config',
-        dest='context_kwargs',
+        '--config-kwargs', '--strax-config-kwargs', '--config',
+        dest='config_kwargs',
         type=json.loads,
         default=None,
         help='Overwrite st.config settings using a json file. For example:'
-             '--context_kwargs '
+             '--config_kwargs '
              '\'{'
              '"s1_min_coincidence": 2,'
              '"s2_min_pmts": 10'
              '}\''
     )
     parser.add_argument(
-        '--config-kwargs', '--config_kwargs',
-        dest='context_config_kwargs',
+        '--context-kwargs', '--context-config-kwargs',
+        dest='context_kwargs',
         type=json.loads,
         default={},
         help='overwrite st.context_config settings using a json file. For example:'
-             '--config-kwargs '
+             '--context-kwargs '
              '\'{'
              '"output_folder": "./strax_data",'
              '}\''
