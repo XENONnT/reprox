@@ -34,8 +34,8 @@ if __name__ == '__main__':
          exclude_from_invalid_cmt_version=args.cmt_version,
          context_kwargs=dict(context=args.context,
                              package=args.package,
-                             config_kwargs=args.context_kwargs,
-                             **args.context_config_kwargs,
+                             config_kwargs=args.config_kwargs,
+                             **args.context_kwargs,
                              ),
          ignore_runs=args.ignore_runs,
          )
