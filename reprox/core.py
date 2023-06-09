@@ -78,10 +78,20 @@ def get_context(package=config['context']['package'],
                 context=config['context']['context'],
                 output_folder=os.path.join(config['context']['base_folder'], 'strax_data'),
                 config_kwargs: typing.Union[None, dict] = None,
-                minimum_run_number=int(config['context']['minimum_run_number']),
-                maximum_run_number=None,
+                minimum_run_number=config['context']['minimum_run_number'],
+                maximum_run_number=config['context']['maximum_run_number'],
                 ):
     module = importlib.import_module(f'{package}.contexts')
+
+    # Clean up None from minimum and maximum run number
+    if minimum_run_number == 'None':
+        minimum_run_number = None
+    else:
+        minimum_run_number = int(minimum_run_number)
+    if maximum_run_number == 'None':
+        maximum_run_number = None
+    else:
+        maximum_run_number = int(maximum_run_number)
 
     # Determine minimum and maximum run number
     if config_kwargs is not None:
