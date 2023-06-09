@@ -144,7 +144,7 @@ def _make_jobs(runs: ty.List[str],
                         overwrite_kr_targets=overwrite_kr_targets,
                         container=container,
                         include_config=include_config,
-                        context_config_kwargs=context_config_kwargs,
+                        context_config_kwargs=context_kwargs,
                         )
         jobs.append(job)
     return jobs
