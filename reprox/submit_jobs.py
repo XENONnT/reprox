@@ -122,8 +122,8 @@ def _make_jobs(runs: ty.List[str],
                cpus_per_task: int = int(core.config['processing']['cpus_per_job']),
                overwrite_kr_targets: bool = True,
                container='xenonnt-development.simg',
-               include_config: ty.Union[None, dict] = None,
-               context_config_kwargs: ty.Union[None, dict] = None,
+               strax_config: ty.Union[None, dict] = None,
+               context_kwargs: ty.Union[None, dict] = None,
                ) -> ty.List[ProcessingJob]:
     if not isinstance(targets, str):
         # Targets should be a string, if not, let's try or fail miserably
@@ -143,8 +143,8 @@ def _make_jobs(runs: ty.List[str],
                         cpus_per_task=cpus_per_task,
                         overwrite_kr_targets=overwrite_kr_targets,
                         container=container,
-                        include_config=include_config,
-                        context_config_kwargs=context_kwargs,
+                        strax_config=strax_config,
+                        context_kwargs=context_kwargs,
                         )
         jobs.append(job)
     return jobs
@@ -159,8 +159,8 @@ def _make_job(run_name: ty.List[str],
               cpus_per_task: int = int(core.config['processing']['cpus_per_job']),
               overwrite_kr_targets: bool = True,
               container='xenonnt-development.simg',
-              include_config: ty.Union[None, dict] = None,
-              context_config_kwargs: ty.Union[None, dict] = None,
+              strax_config: ty.Union[None, dict] = None,
+              context_kwargs: ty.Union[None, dict] = None,
               job_timeout_hours=int(core.config['processing']['job_timeout_hours'])
               ) -> ProcessingJob:
     rd = get_rundoc(run_name)
@@ -179,12 +179,12 @@ def _make_job(run_name: ty.List[str],
     # Allow a different config to be set. NB! These \' are needed to
     # render valid JSON instructions to straxer!
     #breakpoint()
-    if include_config is not None:
-        extra_commands = "--config_kwargs \'" + json.dumps(include_config) + "\'"
+    if strax_config is not None:
+        extra_commands = "--config_kwargs \'" + json.dumps(strax_config) + "\'"
     else:
         extra_commands = ''
-    if context_config_kwargs is not None and context_config_kwargs:
-        extra_commands += ' --context_kwargs \'' + json.dumps(context_config_kwargs) + '\''
+    if context_kwargs is not None and context_kwargs:
+        extra_commands += ' --context_kwargs \'' + json.dumps(context_kwargs) + '\''
     job_dir = os.path.join(core.config['context']['base_folder'], 'job_scripts')
     if not os.path.exists(job_dir):
         os.makedirs(job_dir)
