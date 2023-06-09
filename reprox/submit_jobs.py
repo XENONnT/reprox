@@ -66,12 +66,13 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
         runs = runs[:submit_only]
         core.log.info(f'Passed submit_only={submit_only}. Only processing a subset of runs')
 
+    breakpoint()
     jobs = _make_jobs(
         runs=runs,
         targets=targets,
         **kwargs,
     )
-    breakpoint()
+
     for i, job in enumerate(jobs):
         while not can_submit_more_jobs(core.config['processing']['max_jobs']):
             _print_jobs_status(_jobs_status_summary(jobs))
@@ -178,7 +179,7 @@ def _make_job(run_name: ty.List[str],
     # Allow a different config to be set. NB! These \' are needed to
     # render valid JSON instructions to straxer!
     if include_config is not None:
-        extra_commands = '--config_kwargs \'' + json.dumps(include_config) + '\"'
+        extra_commands = "--config_kwargs \'" + json.dumps(include_config) + "\'"
     else:
         extra_commands = ''
     if context_config_kwargs is not None and context_config_kwargs:
