@@ -85,7 +85,6 @@ def determine_data_to_reprocess(
     else:
         run_mode = run_mode.split(',')
 
-    breakpoint()
     # In case select_runs failed due to weird reasons, try again
     try:
         runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'), 
