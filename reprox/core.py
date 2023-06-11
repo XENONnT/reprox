@@ -12,7 +12,7 @@ import inspect
 from strax import to_str_tuple
 
 
-reprox_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # type: ignore
+reprox_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 if 'REPROX_CONFIG' in os.environ:
     config_path = os.environ['REPROX_CONFIG']
