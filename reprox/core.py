@@ -12,7 +12,7 @@ import inspect
 from strax import to_str_tuple
 
 
-reprox_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+reprox_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # type: ignore
 
 if 'REPROX_CONFIG' in os.environ:
     config_path = os.environ['REPROX_CONFIG']
@@ -80,6 +80,7 @@ def get_context(package=config['context']['package'],
                 config_kwargs: typing.Union[None, dict] = None,
                 minimum_run_number=config['context']['minimum_run_number'],
                 maximum_run_number=config['context']['maximum_run_number'],
+                **kwargs,
                 ):
     module = importlib.import_module(f'{package}.contexts')
 
@@ -113,6 +114,7 @@ def get_context(package=config['context']['package'],
                                       minimum_run_number=minimum_run_number,
                                       maximum_run_number=maximum_run_number,
                                   ),
+                                  **kwargs,
                                   )
     if config_kwargs is not None:
         log.warning(f'Updating the context with the following config {config_kwargs}')

@@ -84,7 +84,6 @@ def determine_data_to_reprocess(
         run_mode = None
     else:
         run_mode = run_mode.split(',')
-
     # In case select_runs failed due to weird reasons, try again
     try:
         runs = st.select_runs(exclude_tags=('messy', 'bad', 'abandoned'), 
