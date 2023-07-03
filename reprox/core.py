@@ -170,7 +170,7 @@ def parse_args(description='nton reprocessing on midway',
     )
     parser.add_argument(
         '--targets', '--target',
-        default=['event_info', 'event_pattern_fit', 'event_ms_naive', 'cuts_basic', 'event_top_bottom_params'],
+        default=['event_info', 'event_ms_naive', 'cuts_basic', 'event_top_bottom_params'],
         nargs='*',
         help='Target final data type to produce. Can be a list for multicore mode.'
     )
