@@ -47,6 +47,7 @@ straxer \
     --context {context} \
     --package {package} \
     --timeout {timeout} \
+    --notlazy \
     {extra_options}
 echo Processing job ended
 """
