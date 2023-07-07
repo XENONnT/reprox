@@ -80,7 +80,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
             partition = cycle_queue(queues=known_partitions)
         job.submit(**dict(partition=partition,
                           qos=partition, ))
-        time.sleep(5)
+        time.sleep(1)
 
     core.log.info('Finished submitting jobs, let\'t keep updating the logs')
     _print_jobs_status(_jobs_status_summary(jobs))
