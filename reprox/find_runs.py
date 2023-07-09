@@ -140,7 +140,7 @@ def determine_data_to_reprocess(
                      f' {len(runs)} runs, this may take a while (~10 it/s)')
 
     core.log.info('Find runs with all prerequisites processed from OSG stored')
-    has_prereq = np.zeros(len(runs), dtype=np.bool)
+    has_prereq = np.zeros(len(runs), dtype=np.bool_)
     dtypes_prereq = core.config['prerequisites']['required_from_osg_dtypes'].split(',')
     for i,run in tqdm(enumerate(runs['name'])):
         has_prereq[i] = st.is_stored(run, dtypes_prereq)
