@@ -5,6 +5,7 @@ import pandas as pd
 import strax
 import utilix
 from reprox import core
+from tqdm import tqdm
 
 
 def find_data(
@@ -141,11 +142,11 @@ def determine_data_to_reprocess(
     core.log.info('Find runs with all prerequisites processed from OSG stored')
     has_prereq = np.zeros(len(runs), dtype=np.bool)
     dtypes_prereq = core.config['prerequisites']['required_from_osg_dtypes'].split(',')
-    for i,run in enumerate(runs['name']):
+    for i,run in tqdm(enumerate(runs['name'])):
         has_prereq[i] = st.is_stored(run, dtypes_prereq)
-    runs = runs[has_prereq]
     core.log.info(f"Found {np.sum(~has_prereq)}/{len(runs)} runs whose prerequisites "
                   f"(%s) processed by OSG are not stored" % (dtypes_prereq))
+    runs = runs[has_prereq]
 
     core.log.info('Find runs with all requirements stored')
     has_base = strax.utils.multi_run(
