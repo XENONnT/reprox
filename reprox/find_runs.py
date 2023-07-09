@@ -159,15 +159,15 @@ def determine_data_to_reprocess(
         multi_run_progress_bar=core.config['display']['progress_bar']
     )
     has_base = np.array(has_base)
-    print(has_base)
 
-    can_make = has_base['run_id'][has_base['can_make']]
-    can_make = np.in1d(runs['name'], can_make)
-    core.log.info(f"Found {np.sum(~can_make)}/{len(runs)} runs where there is no"
-                  f" source for {targets}")
+    if len(has_base):
+        can_make = has_base['run_id'][has_base['can_make']]
+        can_make = np.in1d(runs['name'], can_make)
+        core.log.info(f"Found {np.sum(~can_make)}/{len(runs)} runs where there is no"
+                    f" source for {targets}")
 
-    runs = runs[can_make]
-    core.log.info(f"That leaves {len(runs)} runs to work on.")
+        runs = runs[can_make]
+        core.log.info(f"That leaves {len(runs)} runs to work on.")
     return runs
 
 
