@@ -136,7 +136,7 @@ def determine_data_to_reprocess(
                   f"the data is already stored")
 
     runs = runs[~already_done]
-    core.log.warning(f'We are going to do a data-availability check for'
+    core.log.warning(f'We are going to do a OSG processing prerequisites check for'
                      f' {len(runs)} runs, this may take a while (~10 it/s)')
 
     core.log.info('Find runs with all prerequisites processed from OSG stored')
@@ -147,6 +147,8 @@ def determine_data_to_reprocess(
     core.log.info(f"Found {np.sum(~has_prereq)}/{len(runs)} runs whose prerequisites "
                   f"(%s) processed by OSG are not stored" % (dtypes_prereq))
     runs = runs[has_prereq]
+    core.log.warning(f'We are going to do a dependency-data-availability check for'
+                    f' {len(runs)} runs, this may take a while (~10 it/s)')
 
     core.log.info('Find runs with all requirements stored')
     has_base = strax.utils.multi_run(
