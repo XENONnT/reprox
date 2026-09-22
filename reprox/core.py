@@ -63,7 +63,7 @@ if not os.path.exists(os.path.split(log_fn)[0]):
 def format_context_kwargs(minimum_run_number, maximum_run_number):
     import straxen
     # All contexts inherit from this function!
-    signature = inspect.signature(straxen.contexts.xenonnt_online)
+    signature = inspect.signature(straxen.contexts.xenonnt)
     pars = signature.parameters
     if 'minimum_run_number' in pars and 'maximum_run_number' in pars:
         return dict(minimum_run_number=minimum_run_number,
