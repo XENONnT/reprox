@@ -19,7 +19,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
                     str,
                     ty.List[str],
                     ty.Tuple[str],
-                ] = ('cuts_basic'),
+                ] = None,
                 break_if_n_jobs_left_running: ty.Union[None, int] = None,
                 clear_logs: bool = False,
                 sleep_s_when_queue_full: int = 60,
@@ -46,9 +46,14 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
     kwargs = dict(package=core.config['context']['package'],
                   context=core.config['context']['context'],
                   base_folder=core.config['context']['base_folder'],
+                  context_config_kwargs=core.configured_context_kwargs(),
                   )
     if submit_kwargs is not None:
         kwargs.update(submit_kwargs)
+    if targets is None:
+        targets = core.configured_targets()
+    if submit_only is None:
+        submit_only = int(core.config['processing']['submit_only'])
     print(kwargs)
     if not os.path.exists(core.runs_csv):
         raise FileNotFoundError(f'{core.runs_csv} does not exist, run determine_data.py first!')

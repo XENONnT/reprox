@@ -185,6 +185,8 @@ def _append_storage(
         if isinstance(storage_patches, str):
             storage_patches = storage_patches.split(',')
         for sp in storage_patches:
+            if not sp:
+                continue
             st.storage.append(
                 strax.DataDirectory(sp, readonly=True)
             )

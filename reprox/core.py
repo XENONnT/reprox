@@ -39,6 +39,17 @@ logging.basicConfig(
 
 log = logging.getLogger('reprocessing')
 
+
+def configured_context_kwargs():
+    """Extra keyword arguments for the context constructor from the ini file."""
+    return json.loads(config['context'].get('context_kwargs', '{}'))
+
+
+def configured_targets():
+    """Default processing targets from the ini file."""
+    return config['context'].get('targets', 'cuts_basic').split(',')
+
+
 command = """
 cd {base_folder}
 straxer \
@@ -56,8 +67,7 @@ log_folder = os.path.join(config['context']['base_folder'], 'job_logs')
 log_fn = os.path.join(log_folder, '{run_id}.txt')
 runs_csv = os.path.join(config['context']['base_folder'], config['context']['runs_to_do'])
 
-if not os.path.exists(os.path.split(log_fn)[0]):
-    os.mkdir(os.path.split(log_fn)[0])
+os.makedirs(log_folder, exist_ok=True)
 
 
 def format_context_kwargs(minimum_run_number, maximum_run_number):
@@ -110,12 +120,14 @@ def get_context(package=config['context']['package'],
                             f'to {maximum_run_number_ck}, as it is set in the config')
                 maximum_run_number = maximum_run_number_ck
 
+    context_options = configured_context_kwargs()
+    context_options.update(kwargs)
     st = getattr(module, context)(output_folder=output_folder,
                                   **format_context_kwargs(
                                       minimum_run_number=minimum_run_number,
                                       maximum_run_number=maximum_run_number,
                                   ),
-                                  **kwargs,
+                                  **context_options,
                                   )
     if config_kwargs is not None:
         log.warning(f'Updating the context with the following config {config_kwargs}')
@@ -162,7 +174,7 @@ def parse_args(description='nton reprocessing on midway',
         '--config-kwargs', '--config_kwargs',
         dest='context_config_kwargs',
         type=json.loads,
-        default={},
+        default=configured_context_kwargs(),
         help='overwrite st.context_config settings using a json file. For example:'
              '--config-kwargs '
              '\'{'
@@ -171,7 +183,7 @@ def parse_args(description='nton reprocessing on midway',
     )
     parser.add_argument(
         '--targets', '--target',
-        default=['cuts_basic'],
+        default=configured_targets(),
         nargs='*',
         help='Target final data type to produce. Can be a list for multicore mode.'
     )
