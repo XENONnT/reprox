@@ -167,6 +167,7 @@ def _make_job(run_name: ty.List[str],
               include_config: ty.Union[None, dict] = None,
               context_config_kwargs: ty.Union[None, dict] = None,
               extra_straxer_options: str = '',
+              working_directory: ty.Optional[str] = None,
               job_timeout_hours=int(core.config['processing']['job_timeout_hours'])
               ) -> ProcessingJob:
     rd = get_rundoc(run_name)
@@ -198,7 +199,7 @@ def _make_job(run_name: ty.List[str],
     sbatch_file = os.path.join(job_dir, f'{run_name}-{targets.replace(" ", "_")}.sh')
 
     exec_command = core.command.format(
-        base_folder=base_folder,
+        base_folder=working_directory or base_folder,
         context=context,
         package=package,
         run_name=run_name,
@@ -217,7 +218,7 @@ def _make_job(run_name: ty.List[str],
             cpus_per_task=cpus_per_task,  # Almost never an issue, better ask for more RAM
             container=container,
             sbatch_file=sbatch_file,
-            job_timeout_hours=job_timeout_hours,
+            hours=job_timeout_hours,
         ),
     )
 

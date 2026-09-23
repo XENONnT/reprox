@@ -16,10 +16,11 @@ python -m pip install -e . --user
 ```
 
 At the top of `scripts/submit_profile.py`, check that `CONFIG_PATH` points to
-the intended ini file:
+the intended ini file and `RESOURCE_CACHE` points to the existing cache:
 
 ```python
 CONFIG_PATH = "/home/zhut/analysis/sr3_fast/reprox/reprox/reprocessing_sr3_online.ini"
+RESOURCE_CACHE = "/home/zhut/resource_cache"
 ```
 
 The ini file controls the container tag, requested RAM and CPUs, targets,
@@ -101,7 +102,10 @@ Higher-level targets already stored in Rucio or another storage frontend are
 hidden from the profiling context. This forces them to be recomputed without
 using `straxer --from_scratch`, which would restart from `raw_records`.
 
-Every invocation creates a unique job ID. All files remain under the ini
+Every invocation creates a short job ID in the form
+`<run>-<profile>-<UTC timestamp>`, for example
+`087208-both-20260923T054822Z`. The full target list remains visible in
+`job.sh` and in the command preview. All files remain under the ini
 `base_folder`, on the large storage volume:
 
 ```text
@@ -118,6 +122,11 @@ Every invocation creates a unique job ID. All files remain under the ini
 
 Separate profiling jobs therefore do not write to the same strax output
 directory.
+
+The job runs from the directory containing `RESOURCE_CACHE`, so straxen finds
+the existing cache as `./resource_cache`. Strax output and profiling artifacts
+still use absolute paths under `base_folder`; changing the working directory
+does not move those files into the home directory.
 
 ## Inspect the results
 

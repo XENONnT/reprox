@@ -3,7 +3,6 @@
 
 import argparse
 import os
-import re
 import shlex
 from datetime import datetime, timezone
 
@@ -11,9 +10,14 @@ from datetime import datetime, timezone
 # Set this to the absolute path of your ini file on Midway.
 CONFIG_PATH = "/home/zhut/analysis/sr3_fast/reprox/reprox/reprocessing_sr3_online.ini"
 PARTITION = "lgrandi"
+RESOURCE_CACHE = "/home/zhut/resource_cache"
 
 if not os.path.isfile(CONFIG_PATH):
     raise FileNotFoundError(f"Config file not found. Update CONFIG_PATH: {CONFIG_PATH}")
+if not os.path.isdir(RESOURCE_CACHE):
+    raise FileNotFoundError(
+        f"Resource cache not found. Update RESOURCE_CACHE: {RESOURCE_CACHE}"
+    )
 os.environ["REPROX_CONFIG"] = CONFIG_PATH
 
 from reprox import core, submit_jobs  # noqa: E402
@@ -42,17 +46,12 @@ def parse_args():
     return parser.parse_args()
 
 
-def safe_label(values):
-    return re.sub(r"[^A-Za-z0-9_-]+", "_", "_".join(values)).strip("_")
-
-
 def main():
     args = parse_args()
     run_id = f"{int(args.run_id):06d}"
     base_folder = os.path.abspath(core.config["context"]["base_folder"])
-    label = safe_label(args.targets)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    job_id = f"{run_id}-{label}-{args.profile}-{timestamp}"
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    job_id = f"{run_id}-{args.profile}-{timestamp}"
 
     # Keep all large data and job artifacts on the storage selected by base_folder.
     job_dir = os.path.join(base_folder, "profile_jobs", job_id)
@@ -86,6 +85,7 @@ def main():
         container=f"xenonnt-{tag}.simg",
         context_config_kwargs=context_kwargs,
         extra_straxer_options=" ".join(shlex.quote(x) for x in straxer_options),
+        working_directory=os.path.dirname(RESOURCE_CACHE),
     )
     job.submit_kwargs["jobstring"] = (
         f"export REPROX_PROFILE_OUTPUT={shlex.quote(output_dir)}\n"
@@ -101,6 +101,7 @@ def main():
     print(job.submit_kwargs["jobstring"])
     print(f"Job directory: {job_dir}")
     print(f"Private strax output: {output_dir}")
+    print(f"Resource cache: {RESOURCE_CACHE}")
     print(f"Slurm log: {log_file}")
     if args.profile in ("cpu", "both"):
         print(f"CPU profile: {profile_file}")
