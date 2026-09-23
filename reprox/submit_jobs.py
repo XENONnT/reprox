@@ -166,6 +166,7 @@ def _make_job(run_name: ty.List[str],
               container='xenonnt-development.simg',
               include_config: ty.Union[None, dict] = None,
               context_config_kwargs: ty.Union[None, dict] = None,
+              extra_straxer_options: str = '',
               job_timeout_hours=int(core.config['processing']['job_timeout_hours'])
               ) -> ProcessingJob:
     rd = get_rundoc(run_name)
@@ -189,6 +190,8 @@ def _make_job(run_name: ty.List[str],
         extra_commands = ''
     if context_config_kwargs is not None and context_config_kwargs:
         extra_commands += ' --context_kwargs \'' + json.dumps(context_config_kwargs) + '\''
+    if extra_straxer_options:
+        extra_commands += ' ' + extra_straxer_options
     job_dir = os.path.join(core.config['context']['base_folder'], 'job_scripts')
     if not os.path.exists(job_dir):
         os.makedirs(job_dir)
