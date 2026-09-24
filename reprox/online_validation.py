@@ -2,7 +2,6 @@
 
 import argparse
 import glob
-import grp
 import os
 import time
 
@@ -202,8 +201,8 @@ def parse_args():
     )
     parser.add_argument(
         "--group",
-        default=grp.getgrgid(os.getgid()).gr_name,
-        help="Group assigned to moved output directories.",
+        default=None,
+        help="Optional group override; by default move preserves ownership and permissions.",
     )
     return parser.parse_args()
 

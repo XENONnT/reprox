@@ -116,6 +116,8 @@ only performs shallow validation and only handles runs in `completed`,
 `validating`, or `moving`. Before doing any work, it verifies that
 `base_folder/strax_data` and `destination_folder` are on the same filesystem;
 otherwise it exits without moving data.
+By default the move preserves each directory's existing owner, group, and
+permissions. `--group` is only an explicit override.
 
 Run one validation/move cycle for at most one completed run:
 

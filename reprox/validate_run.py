@@ -127,13 +127,13 @@ class RunValidation:
 
 def change_ownership(path, group):
     shutil.chown(path, group=group)
-    # Change to drwxrwxr-x
-    os.chmod(path, 0o775)
+    # Change to drwxrwsr-x so new contents inherit the directory group.
+    os.chmod(path, 0o2775)
 
 
 def move_folder(path: str,
                 destination_folder: str = core.config['context']['destination_folder'],
-                group='xenon1t-admins',
+                group: ty.Optional[str] = None,
                 validation_level: int = ValidationLevel.SHALLOW,
                 context: ty.Optional[strax.Context] = None,
                 ) -> ty.Union[str, None]:
@@ -158,7 +158,8 @@ def move_folder(path: str,
     dest_path = os.path.join(destination_folder, os.path.split(path)[-1])
     if os.path.exists(dest_path):
         raise FileExistsError(f'{dest_path} already exists!')
-    change_ownership(path, group)
+    if group is not None:
+        change_ownership(path, group)
     shutil.move(path, dest_path)
     return None
 

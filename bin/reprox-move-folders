@@ -12,7 +12,11 @@ def main():
     parser.add_argument('--run', type=int, help='Run number to inspect; omit to move all')
     parser.add_argument('--deep', action='store_true', help='Also check lineage and read all data')
     parser.add_argument('--check-only', action='store_true', help='Validate without moving')
-    parser.add_argument('--group', default='xenon1t-admins', help='Destination directory group')
+    parser.add_argument(
+        '--group',
+        default=None,
+        help='Optional group override; by default move preserves ownership and permissions',
+    )
     args = parser.parse_args()
 
     source = os.path.join(core.config['context']['base_folder'], 'strax_data')
