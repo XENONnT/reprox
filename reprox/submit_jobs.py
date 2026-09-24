@@ -125,7 +125,6 @@ def _make_jobs(runs: ty.List[str],
                package: str,
                ram: int = int(core.config['processing']['ram']),
                cpus_per_task: int = int(core.config['processing']['cpus_per_job']),
-               overwrite_kr_targets: bool = True,
                container='xenonnt-development.simg',
                include_config: ty.Union[None, dict] = None,
                context_config_kwargs: ty.Union[None, dict] = None,
@@ -146,7 +145,6 @@ def _make_jobs(runs: ty.List[str],
                         package=package,
                         ram=ram,
                         cpus_per_task=cpus_per_task,
-                        overwrite_kr_targets=overwrite_kr_targets,
                         container=container,
                         include_config=include_config,
                         context_config_kwargs=context_config_kwargs,
@@ -162,7 +160,6 @@ def _make_job(run_name: ty.List[str],
               package: str,
               ram: int = int(core.config['processing']['ram']),
               cpus_per_task: int = int(core.config['processing']['cpus_per_job']),
-              overwrite_kr_targets: bool = True,
               container='xenonnt-development.simg',
               include_config: ty.Union[None, dict] = None,
               context_config_kwargs: ty.Union[None, dict] = None,
@@ -172,13 +169,7 @@ def _make_job(run_name: ty.List[str],
               ) -> ProcessingJob:
     rd = get_rundoc(run_name)
     source = rd.get('source', 'none')
-    submit_target = targets
-    if source == 'kr-83m':
-        submit_ram = ram * float(core.config['processing']['ram_multiplier_for_calibrations'])
-        if overwrite_kr_targets:
-            submit_target = submit_target.replace('event_info',
-                                                  'event_info_double')
-    elif source in ['rn-220', 'ambe']:
+    if source in ('kr-83m', 'rn-220', 'ambe'):
         submit_ram = ram * float(core.config['processing']['ram_multiplier_for_calibrations'])
     else:
         submit_ram = ram
@@ -203,7 +194,7 @@ def _make_job(run_name: ty.List[str],
         context=context,
         package=package,
         run_name=run_name,
-        target=submit_target,
+        target=targets,
         timeout=int(core.config['context']['straxer_timeout_seconds']),
         extra_options=extra_commands,
     )
@@ -213,7 +204,7 @@ def _make_job(run_name: ty.List[str],
         submit_kwargs=dict(
             jobstring=exec_command,
             log=core.log_fn.format(run_id=run_name),
-            jobname=f'{run_name}-{submit_target[:5]}_reprocess',
+            jobname=f'{run_name}-{targets[:5]}_reprocess',
             mem_per_cpu=int(submit_ram / cpus_per_task),
             cpus_per_task=cpus_per_task,  # Almost never an issue, better ask for more RAM
             container=container,
@@ -224,7 +215,11 @@ def _make_job(run_name: ty.List[str],
 
 
 def n_jobs_running():
-    return utilix.batchq.count_jobs(string=':')
+    output = subprocess.check_output(
+        ['squeue', '-h', '--user', os.environ['USER']],
+        text=True,
+    )
+    return len(output.splitlines())
 
 
 def can_submit_more_jobs(nmax=core.config['processing']['max_jobs']):

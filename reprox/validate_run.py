@@ -97,7 +97,7 @@ class RunValidation:
         st.storage = [
             strax.DataDirectory(
                 os.path.split(self.path)[0],
-                readline=False)]
+                readonly=True)]
         try:
             for _ in st.get_iter(run, data_type, progress_bar=False):
                 pass
@@ -155,10 +155,10 @@ def move_folder(path: str,
     error_string = validation.find_error()
     if error_string:
         return error_string
-    change_ownership(path, group)
     dest_path = os.path.join(destination_folder, os.path.split(path)[-1])
     if os.path.exists(dest_path):
         raise FileExistsError(f'{dest_path} already exists!')
+    change_ownership(path, group)
     shutil.move(path, dest_path)
     return None
 

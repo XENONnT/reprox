@@ -1,10 +1,71 @@
 #!/usr/bin/env python
+import argparse
+import glob
+import os
+
 from reprox import validate_run, core
 
 
 def main():
-    """Move the data in so far completely done"""
-    validate_run.move_all()
+    """Validate and move output directories, optionally selecting one run."""
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument('--run', type=int, help='Run number to inspect; omit to move all')
+    parser.add_argument('--deep', action='store_true', help='Also check lineage and read all data')
+    parser.add_argument('--check-only', action='store_true', help='Validate without moving')
+    parser.add_argument('--group', default='xenon1t-admins', help='Destination directory group')
+    args = parser.parse_args()
+
+    source = os.path.join(core.config['context']['base_folder'], 'strax_data')
+    destination = core.config['context']['destination_folder']
+    level = validate_run.ValidationLevel.DEEP if args.deep else validate_run.ValidationLevel.SHALLOW
+    context = core.get_context() if args.deep else None
+    if args.run is None:
+        if args.check_only:
+            parser.error('--check-only requires --run')
+        os.makedirs(destination, exist_ok=True)
+        validate_run.move_all(
+            source_folder=source,
+            destination_folder=destination,
+            validation_level=level,
+            context=context,
+            group=args.group,
+        )
+        return
+
+    run_id = f'{args.run:06d}'
+    folders = sorted(
+        path for path in glob.glob(os.path.join(source, f'{run_id}-*'))
+        if os.path.isdir(path)
+    )
+    if not folders:
+        parser.error(f'No output directories found for run {run_id} in {source}')
+
+    failures = []
+    for path in folders:
+        error = validate_run.RunValidation(path, context=context, mode=level).find_error()
+        print(f'{os.path.basename(path)}: {error or "ok"}')
+        if error:
+            failures.append(path)
+    if failures:
+        parser.exit(1, f'{len(failures)} directories failed validation; nothing moved\n')
+    if args.check_only:
+        print(f'{len(folders)} directories passed validation; nothing moved')
+        return
+
+    existing = [path for path in folders if os.path.exists(
+        os.path.join(destination, os.path.basename(path))
+    )]
+    if existing:
+        parser.exit(1, f'{len(existing)} directories already exist at destination; nothing moved\n')
+    os.makedirs(destination, exist_ok=True)
+    for path in folders:
+        validate_run.move_folder(
+            path,
+            destination_folder=destination,
+            group=args.group,
+            validation_level=validate_run.ValidationLevel.SHALLOW,
+        )
+    print(f'Moved {len(folders)} directories for run {run_id} to {destination}')
 
 
 if __name__ == '__main__':
