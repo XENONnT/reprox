@@ -1,22 +1,19 @@
-"""Contexts used by reprox utility jobs."""
+"""Contexts used only by isolated reprox test jobs."""
 
 import os
 
 import cutax
 
 
-def xenonnt_online_recompute(
+def xenonnt_online(
         output_folder=None,
-        input_only=("peaklets", "lone_hits"),
+        take_only=("peaklets", "lone_hits"),
         **kwargs):
-    """Build an online context that recomputes everything above input_only."""
+    """Build a test context that can read only the selected input data types."""
     if output_folder is None:
-        output_folder = os.environ.get("REPROX_OUTPUT_FOLDER")
-    if output_folder is None:
-        # Keep jobs made by older versions of submit_profile.py working.
         output_folder = os.environ.get("REPROX_PROFILE_OUTPUT")
     if not output_folder:
-        raise ValueError("output_folder or REPROX_OUTPUT_FOLDER is required")
+        raise ValueError("output_folder or REPROX_PROFILE_OUTPUT is required")
     st = cutax.contexts.xenonnt_online(output_folder=output_folder, **kwargs)
     output_folder = os.path.realpath(output_folder)
     found_output = False
@@ -26,20 +23,8 @@ def xenonnt_online_recompute(
         if storage_path is not None and os.path.realpath(storage_path) == output_folder:
             found_output = True
             continue
-        storage.take_only = tuple(input_only)
+        storage.take_only = tuple(take_only)
 
     if not found_output:
         raise RuntimeError(f"No writable DataDirectory found at {output_folder}")
     return st
-
-
-def xenonnt_online_profile(
-        output_folder=None,
-        input_only=("peaklets", "lone_hits"),
-        **kwargs):
-    """Backward-compatible name for the profiling submission script."""
-    return xenonnt_online_recompute(
-        output_folder=output_folder,
-        input_only=input_only,
-        **kwargs,
-    )

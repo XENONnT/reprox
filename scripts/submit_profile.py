@@ -70,7 +70,7 @@ def main():
     tag = core.config["processing"]["container_tag"]
     context_kwargs = core.configured_context_kwargs().copy()
     context_kwargs["output_folder"] = output_dir
-    context_kwargs["input_only"] = [
+    context_kwargs["take_only"] = [
         value.strip()
         for value in core.config["prerequisites"]["required_from_osg_dtypes"].split(",")
     ]
@@ -78,7 +78,7 @@ def main():
         run_name=run_id,
         targets=" ".join(args.targets),
         base_folder=base_folder,
-        context="xenonnt_online_profile",
+        context="xenonnt_online",
         package="reprox",
         ram=int(core.config["processing"]["ram"]),
         cpus_per_task=int(core.config["processing"]["cpus_per_job"]),
@@ -88,7 +88,7 @@ def main():
         working_directory=os.path.dirname(RESOURCE_CACHE),
     )
     job.submit_kwargs["jobstring"] = (
-        f"export REPROX_OUTPUT_FOLDER={shlex.quote(output_dir)}\n"
+        f"export REPROX_PROFILE_OUTPUT={shlex.quote(output_dir)}\n"
         + job.submit_kwargs["jobstring"]
     )
     job.submit_kwargs.update(
