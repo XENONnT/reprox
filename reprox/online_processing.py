@@ -1,6 +1,8 @@
 """RunDB monitoring and state-driven online reprocessing."""
 
 import argparse
+from contextlib import contextmanager
+import fcntl
 import os
 import re
 import subprocess
@@ -22,6 +24,10 @@ PROCESSING = "processing"
 COMPLETED = "completed"
 FAILED = "failed"
 SKIPPED = "skipped"
+VALIDATING = "validating"
+VALIDATION_FAILED = "validation_failed"
+MOVING = "moving"
+MOVED = "moved"
 
 ACTIVE_STATES = (SUBMITTED, PROCESSING)
 PREREQUISITE_STATES = (WAITING, READY)
@@ -49,6 +55,19 @@ STATE_COLUMNS = (
 def utc_now():
     """Return a timezone-naive UTC timestamp suitable for pandas HDF5."""
     return pd.Timestamp.now(tz="UTC").tz_localize(None)
+
+
+@contextmanager
+def state_lock(path):
+    """Prevent multiple reprox services from updating one state file at once."""
+    lock_path = f"{os.path.abspath(path)}.lock"
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    with open(lock_path, "a") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def empty_state():
@@ -548,11 +567,12 @@ def main():
     collection = xent_collection()
     input_context = make_input_context(args.rucio_path)
     output_context = make_output_context()
-    frame = load_state(args.state_file)
 
     while True:
         try:
-            frame = run_cycle(collection, input_context, output_context, frame, args)
+            with state_lock(args.state_file):
+                frame = load_state(args.state_file)
+                run_cycle(collection, input_context, output_context, frame, args)
         except Exception as error:
             core.log.exception("Online processing cycle failed: %s", error)
             if args.once:

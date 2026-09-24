@@ -106,30 +106,27 @@ catalog or replication-rule status alone does not provide that guarantee.
 
 ## Validate and move SR3 output
 
-After a run reaches `completed` in the HDF5 table, check its output directories
-without moving them:
+`reprox-online-validation` reads the same state file as online processing. It
+only performs shallow validation and only handles runs in `completed`,
+`validating`, or `moving`. Before doing any work, it verifies that
+`base_folder/strax_data` and `destination_folder` are on the same filesystem;
+otherwise it exits without moving data.
+
+Run one validation/move cycle for at most one completed run:
 
 ```bash
 cd /home/zhut/analysis/sr3_fast/reprox
 export REPROX_CONFIG=$PWD/reprox/reprocessing_sr3_online.ini
-PYTHONPATH=. python bin/reprox-move-folders --run 087210 --deep --check-only
+PYTHONPATH=. python -m reprox.online_validation \
+  --once \
+  --state-file /scratch/midway3/zhut/strax_data/sr3/online_processing_test.h5
 ```
 
-When every directory reports `ok`, move that run:
+Omit `--once` to keep checking once per minute. By default, one run is moved
+per cycle. Use `--run 087210` to select one run or
+`--max-runs-per-cycle 0` to process every completed run.
 
-```bash
-PYTHONPATH=. python bin/reprox-move-folders --run 087210 --deep --group zhut
-```
-
-`--deep` checks the lineage against the configured context and reads every
-output chunk. Run it in the same software environment used to process the run,
-so the lineage comparison uses the same plugin versions. The command creates
-the configured `destination_folder` if it
-does not exist. Use `--group zhut` on this server because the old default
-`xenon1t-admins` group is not available to this user. Omitting `--run` keeps
-the legacy behavior of scanning and moving every output directory.
-
-The HDF5 status remains `completed` after a move; validation and movement are
-not yet recorded as separate states. Continue using the same HDF5 state file
-when restarting online processing, since the source output is no longer in
-`strax_data` after the move.
+The HDF5 status advances through `validating` and `moving` to `moved`.
+Validation failures become `validation_failed`. Both online services use a
+shared lock and reload the HDF5 table each cycle, so a `moved` run is retained
+and is not submitted again.

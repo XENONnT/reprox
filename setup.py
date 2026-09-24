@@ -43,6 +43,7 @@ setuptools.setup(name='reprox',
                  scripts=['bin/reprox-find-data',
                           'bin/reprox-move-folders',
                           'bin/reprox-online-processing',
+                          'bin/reprox-online-validation',
                           'bin/reprox-reprocess',
                           'bin/reprox-start-jobs'],
                  classifiers=[
