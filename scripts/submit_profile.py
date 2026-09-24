@@ -88,7 +88,7 @@ def main():
         working_directory=os.path.dirname(RESOURCE_CACHE),
     )
     job.submit_kwargs["jobstring"] = (
-        f"export REPROX_PROFILE_OUTPUT={shlex.quote(output_dir)}\n"
+        f"export REPROX_OUTPUT_FOLDER={shlex.quote(output_dir)}\n"
         + job.submit_kwargs["jobstring"]
     )
     job.submit_kwargs.update(
