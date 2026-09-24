@@ -24,10 +24,10 @@ records completion when the log contains `Processing job ended`. The submitted
 script only writes this marker after straxer exits with status zero, so the
 listener does not need the same processing-package versions as the container.
 
-Select the SR3 configuration before starting it:
+From the repository root, select the SR3 configuration before starting it:
 
 ```bash
-export REPROX_CONFIG=/home/zhut/analysis/sr3_fast/reprox/reprox/reprocessing_sr3_online.ini
+export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online.ini"
 ```
 
 Run one monitoring cycle without submitting jobs:
@@ -73,7 +73,7 @@ table with:
 import pandas as pd
 
 runs = pd.read_hdf(
-    "/scratch/midway3/zhut/strax_data/sr3/online_processing.h5",
+    "/path/to/online_processing.h5",
     key="runs",
 )
 ```
@@ -122,11 +122,11 @@ permissions. `--group` is only an explicit override.
 Run one validation/move cycle for at most one completed run:
 
 ```bash
-cd /home/zhut/analysis/sr3_fast/reprox
-export REPROX_CONFIG=$PWD/reprox/reprocessing_sr3_online.ini
+export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online.ini"
+STATE_FILE=/path/to/online_processing.h5
 PYTHONPATH=. python -m reprox.online_validation \
   --once \
-  --state-file /scratch/midway3/zhut/strax_data/sr3/online_processing_test.h5
+  --state-file "$STATE_FILE"
 ```
 
 Omit `--once` to keep checking once per minute. By default, one run is moved
