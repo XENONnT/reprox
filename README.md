@@ -114,7 +114,7 @@ catalog or replication-rule status alone does not provide that guarantee.
 `reprox-online-validation` reads the same state file as online processing. It
 only performs shallow validation and only handles runs in `completed`,
 `validating`, or `moving`. Before doing any work, it verifies that
-`base_folder/strax_data` and `destination_folder` are on the same filesystem;
+`base_folder` (the online job output directory) and `destination_folder` are on the same filesystem;
 otherwise it exits without moving data.
 By default the move preserves each directory's existing owner, group, and
 permissions. `--group` is only an explicit override.

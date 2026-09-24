@@ -14,11 +14,12 @@ RETRYABLE_STATES = (
     online_processing.VALIDATING,
     online_processing.MOVING,
 )
+MISSING_OUTPUT_MESSAGE = "No output directories found in source or destination"
 
 
 def configured_paths():
-    base_folder = os.path.abspath(core.config["context"]["base_folder"])
-    source = os.path.join(base_folder, "strax_data")
+    # reprox.contexts.xenonnt_online writes job output directly to base_folder.
+    source = os.path.abspath(core.config["context"]["base_folder"])
     destination = os.path.abspath(core.config["context"]["destination_folder"])
     return source, destination
 
@@ -75,7 +76,7 @@ def validate_and_move_run(frame, state_path, number, source, destination, group)
                 state_path,
                 number,
                 online_processing.VALIDATION_FAILED,
-                "No output directories found in source or destination",
+                MISSING_OUTPUT_MESSAGE,
             )
         return
 
@@ -160,7 +161,13 @@ def validate_and_move_run(frame, state_path, number, source, destination, group)
 def run_cycle(state_path, source, destination, group, run_number, max_runs):
     with online_processing.state_lock(state_path):
         frame = online_processing.load_state(state_path)
-        candidates = frame.index[frame["status"].isin(RETRYABLE_STATES)]
+        retry_wrong_path = (
+            frame["status"].eq(online_processing.VALIDATION_FAILED)
+            & frame["message"].eq(MISSING_OUTPUT_MESSAGE)
+        )
+        candidates = frame.index[
+            frame["status"].isin(RETRYABLE_STATES) | retry_wrong_path
+        ]
         if run_number is not None:
             candidates = candidates[candidates == run_number]
         if max_runs:
