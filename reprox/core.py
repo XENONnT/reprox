@@ -65,7 +65,10 @@ echo Processing job ended
 
 log_folder = os.path.join(config['context']['base_folder'], 'job_logs')
 log_fn = os.path.join(log_folder, '{run_id}.txt')
-runs_csv = os.path.join(config['context']['base_folder'], config['context']['runs_to_do'])
+runs_csv = os.path.join(
+    config['context']['base_folder'],
+    config['context'].get('runs_to_do', 'to_do_runs.csv'),
+)
 
 os.makedirs(log_folder, exist_ok=True)
 
@@ -89,8 +92,8 @@ def get_context(package=config['context']['package'],
                 context=config['context']['context'],
                 output_folder=os.path.join(config['context']['base_folder'], 'strax_data'),
                 config_kwargs: typing.Union[None, dict] = None,
-                minimum_run_number=config['context']['minimum_run_number'],
-                maximum_run_number=config['context']['maximum_run_number'],
+                minimum_run_number=config['context'].get('minimum_run_number', 'None'),
+                maximum_run_number=config['context'].get('maximum_run_number', 'None'),
                 **kwargs,
                 ):
     module = importlib.import_module(f'{package}.contexts')
@@ -231,7 +234,7 @@ def _include_find_args(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     )
     parser.add_argument(
         '--cmt-version', '--cmt_version', '--check_cmt_version', '--check-cmt-version',
-        default=config['context']['cmt_version'],
+        default=config['context'].get('cmt_version', 'False'),
         type=str,
         dest='cmt_version',
         help='Specify CMT version if we should exclude runs that cannot be '
@@ -274,7 +277,7 @@ def _include_processing_args(parser: argparse.ArgumentParser) -> argparse.Argume
     )
     parser.add_argument(
         '--submit-only', '--submit_only',
-        default=config['processing']['submit_only'],
+        default=config['processing'].get('submit_only', 0),
         type=int,
         help='Limits the total number of jobs to submit. Useful for testing. '
     )

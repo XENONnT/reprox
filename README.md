@@ -50,7 +50,9 @@ By default, at most one ready run is submitted per cycle. Change this limit
 with `--max-submit-per-cycle`; zero uses all capacity below the ini `max_jobs`
 limit.
 For a one-run submission test, use `--once --submit --max-submit-per-cycle 1`.
-The ini `submit_only` setting applies only to the legacy `reprox-start-jobs` command.
+
+Set the ini `run_mode` to a comma-separated list of exact RunDB mode names to
+restrict discovery to those modes. Leave it empty to monitor all modes.
 
 The state machine is:
 

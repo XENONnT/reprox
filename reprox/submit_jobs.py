@@ -53,7 +53,7 @@ def submit_jobs(submit_kwargs: ty.Optional[dict] = None,
     if targets is None:
         targets = core.configured_targets()
     if submit_only is None:
-        submit_only = int(core.config['processing']['submit_only'])
+        submit_only = int(core.config['processing'].get('submit_only', 0))
     print(kwargs)
     if not os.path.exists(core.runs_csv):
         raise FileNotFoundError(f'{core.runs_csv} does not exist, run determine_data.py first!')

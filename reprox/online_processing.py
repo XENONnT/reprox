@@ -148,6 +148,15 @@ def configured_excluded_sources():
     }
 
 
+def configured_run_modes():
+    """RunDB modes selected for this processing campaign."""
+    return tuple(
+        value.strip()
+        for value in core.config["context"].get("run_mode", "").split(",")
+        if value.strip()
+    )
+
+
 def minimum_run_number():
     value = core.config["context"].get("minimum_run_number", "None")
     return None if value == "None" else int(value)
@@ -187,10 +196,12 @@ def latest_run(collection):
     )
 
 
-def recent_completed_runs(collection, minimum_run, lookback):
+def recent_completed_runs(collection, minimum_run, lookback, run_modes=()):
     query = {"end": {"$type": "date"}, "detectors": "tpc"}
     if minimum_run is not None:
         query["number"] = {"$gt": minimum_run}
+    if run_modes:
+        query["mode"] = {"$in": list(run_modes)}
     projection = {
         "number": 1,
         "start": 1,
@@ -450,7 +461,12 @@ def print_summary(frame, latest):
 
 def run_cycle(collection, input_context, output_context, frame, args):
     latest = latest_run(collection)
-    documents = recent_completed_runs(collection, args.minimum_run, args.lookback)
+    documents = recent_completed_runs(
+        collection,
+        args.minimum_run,
+        args.lookback,
+        configured_run_modes(),
+    )
     frame = discover_runs(frame, documents)
     frame = apply_exclusions(frame)
     pending = frame["status"].isin(PREREQUISITE_STATES)

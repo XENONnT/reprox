@@ -11,11 +11,13 @@ from tqdm import tqdm
 def find_data(
         targets: ty.Union[str, list, tuple],
         exclude_from_invalid_cmt_version: ty.Union[bool, str] = (
-                core.config['context']['cmt_version']),
+                core.config['context'].get('cmt_version', 'False')),
         context_kwargs: ty.Optional[dict] = None,
-        storage_patches: ty.Union[str, tuple, list] = core.config['context']['storage_patches'],
+        storage_patches: ty.Union[str, tuple, list] = (
+                core.config['context'].get('storage_patches', '')),
         keep_detectors:
-        ty.Union[str, tuple, list] = core.config['context']['include_detectors'].split(','),
+        ty.Union[str, tuple, list] = (
+                core.config['context'].get('include_detectors', 'tpc').split(',')),
         ignore_runs=tuple()
 ) -> None:
     """
@@ -57,7 +59,8 @@ def determine_data_to_reprocess(
         special_modes: ty.Union[ty.List[str], ty.Tuple[str]] = (
                 'LED', 'noise', 'pmtap', 'pmtgain', 'exttrig'),
         keep_detectors: ty.Union[str, tuple, list] = ('tpc',),
-        exclude_from_invalid_cmt: ty.Optional[str] = core.config['context']['cmt_version'],
+        exclude_from_invalid_cmt: ty.Optional[str] = (
+                core.config['context'].get('cmt_version', 'False')),
         _max_workers: int = 50,
         ignore_runs=tuple(),
 ) -> pd.DataFrame:
