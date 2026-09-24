@@ -412,11 +412,28 @@ def build_job(number, targets):
 def submit_ready(frame, state_path, max_submit):
     """Submit ready runs and persist state after each successful submission."""
     partition = core.config["processing"]["allowed_partitions"].split(",")[0].strip()
-    capacity = max(0, int(core.config["processing"]["max_jobs"]) - submit_jobs.n_jobs_running())
-    limit = capacity if max_submit == 0 else min(capacity, max_submit)
+    max_jobs = int(core.config["processing"]["max_jobs"])
+    accounted_jobs = 0
+    submitted_this_cycle = 0
 
-    ready = list(frame.index[frame["status"] == READY])[:limit]
+    ready = list(frame.index[frame["status"] == READY])
     for number in ready:
+        if max_submit and submitted_this_cycle >= max_submit:
+            break
+
+        # Recheck the user's whole Slurm queue before every submission. Keep a
+        # local reservation for jobs just submitted in this cycle because
+        # squeue may take a moment to show them.
+        accounted_jobs = max(accounted_jobs, submit_jobs.n_jobs_running())
+        if accounted_jobs >= max_jobs:
+            core.log.info(
+                "Not submitting run %06d: %d of %d allowed jobs are accounted for",
+                int(number),
+                accounted_jobs,
+                max_jobs,
+            )
+            break
+
         attempt = int(frame.at[number, "attempts"]) + 1
         archive_old_log(number, attempt)
         job = build_job(number, frame.at[number, "targets"])
@@ -444,6 +461,8 @@ def submit_ready(frame, state_path, max_submit):
             else "Submission returned without a job ID; check Slurm before retrying"
         )
         save_state(state_path, frame)
+        accounted_jobs += 1
+        submitted_this_cycle += 1
     return frame
 
 
