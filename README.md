@@ -20,7 +20,9 @@ Can be found either [on github](https://github.com/XENONnT/reprox/blob/master/EX
 `reprox-online-processing` monitors recent completed TPC runs in RunDB, checks
 whether the configured prerequisites are complete on the local Rucio mount,
 tracks submitted jobs, extracts processing progress from straxer logs, and
-records completion.
+records completion when the log contains `Processing job ended`. The submitted
+script only writes this marker after straxer exits with status zero, so the
+listener does not need the same processing-package versions as the container.
 
 Select the SR3 configuration before starting it:
 
@@ -84,6 +86,9 @@ rewritten through a temporary HDF5 file and atomically replaced.
 After Slurm accepts a job, the returned job ID is saved to HDF5 immediately.
 On restart, use the same state file: submitted runs are checked by job ID with
 `squeue`. `PENDING` remains `submitted`, while `RUNNING` becomes `processing`.
+If a job has left `squeue`, the final log marker still changes it to
+`completed`; rows previously marked `failed` are also rechecked for a delayed
+marker.
 Runs already marked `submitted` or `processing` are not submitted again.
 Runs still waiting for input or submission use the current ini `targets`, so
 changing the configured target also updates those rows on the next cycle.

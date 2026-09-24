@@ -9,7 +9,6 @@ import subprocess
 import time
 
 import pandas as pd
-import strax
 import straxen
 from utilix import xent_collection
 
@@ -33,6 +32,7 @@ ACTIVE_STATES = (SUBMITTED, PROCESSING)
 PREREQUISITE_STATES = (WAITING, READY)
 EXCLUDED_TAGS = ("messy", "bad", "abandoned")
 PROGRESS_PATTERN = re.compile(r"([0-9]+(?:\.[0-9]+)?)% into the run")
+COMPLETION_MARKER = "Processing job ended"
 
 STATE_COLUMNS = (
     "start",
@@ -196,17 +196,6 @@ def make_input_context(path):
     return st
 
 
-def make_output_context():
-    """Create a context that can only see reprox's local processing output."""
-    output_folder = os.path.join(
-        os.path.abspath(core.config["context"]["base_folder"]),
-        "strax_data",
-    )
-    st = core.get_context(output_folder=output_folder)
-    st.storage = [strax.DataDirectory(output_folder, readonly=True)]
-    return st
-
-
 def latest_run(collection):
     return collection.find_one(
         {},
@@ -312,11 +301,6 @@ def update_prerequisites(frame, st, prerequisites):
     return frame
 
 
-def targets_are_stored(st, number, targets):
-    run_id = f"{int(number):06d}"
-    return st.is_stored(run_id, targets.split())
-
-
 def read_log(number, max_bytes=2_000_000):
     """Read the tail of a job log without loading an unbounded file."""
     path = core.log_fn.format(run_id=f"{int(number):06d}")
@@ -336,6 +320,11 @@ def read_log(number, max_bytes=2_000_000):
 def progress_from_log(text):
     values = [float(value) for value in PROGRESS_PATTERN.findall(text)]
     return max(values, default=0.0)
+
+
+def log_has_completed(text):
+    """Return whether straxer exited successfully and wrote its final marker."""
+    return any(line.strip() == COMPLETION_MARKER for line in text.splitlines())
 
 
 def log_has_error(text):
@@ -360,29 +349,34 @@ def slurm_state(job_id):
     return states[0].upper() if states else "LEFT_QUEUE"
 
 
-def update_processing(frame, output_context):
-    """Update submitted jobs from local output, Slurm, and straxer logs."""
+def update_processing(frame):
+    """Update submitted jobs from Slurm and straxer logs."""
     now = utc_now()
-    for number in frame.index[frame["status"].isin(ACTIVE_STATES)]:
-        targets = frame.at[number, "targets"]
-        try:
-            if targets_are_stored(output_context, number, targets):
-                frame.at[number, "status"] = COMPLETED
-                frame.at[number, "progress"] = 100.0
-                frame.at[number, "message"] = "All targets stored"
-                frame.at[number, "updated_at"] = now
-                continue
-        except Exception as error:
-            frame.at[number, "message"] = f"Output check failed: {type(error).__name__}: {error}"
-
+    monitored_states = ACTIVE_STATES + (FAILED,)
+    for number in frame.index[frame["status"].isin(monitored_states)]:
         text, log_path = read_log(number)
         frame.at[number, "progress"] = progress_from_log(text)
+        has_error = log_has_error(text)
+
+        # New job scripts only write this marker when straxer exits with zero.
+        # Requiring an error-free log also keeps older unconditional markers
+        # from turning known failures into completed runs.
+        if log_has_completed(text) and not has_error:
+            frame.at[number, "status"] = COMPLETED
+            frame.at[number, "progress"] = 100.0
+            frame.at[number, "message"] = "Processing job ended successfully"
+            frame.at[number, "updated_at"] = now
+            continue
+
+        if frame.at[number, "status"] == FAILED:
+            continue
+
         queue_state = slurm_state(frame.at[number, "job_id"])
 
         if queue_state in ("PENDING", "CONFIGURING", "SUSPENDED"):
             frame.at[number, "status"] = SUBMITTED
             frame.at[number, "message"] = f"Slurm state: {queue_state}"
-        elif log_has_error(text):
+        elif has_error:
             frame.at[number, "status"] = FAILED
             frame.at[number, "message"] = f"Error found in {log_path}"
         elif queue_state in ("RUNNING", "COMPLETING"):
@@ -390,7 +384,7 @@ def update_processing(frame, output_context):
             frame.at[number, "message"] = f"Slurm state: {queue_state}"
         elif queue_state == "LEFT_QUEUE":
             frame.at[number, "status"] = FAILED
-            frame.at[number, "message"] = "Job left Slurm without producing output"
+            frame.at[number, "message"] = "Job left Slurm without a completion marker"
         elif text:
             frame.at[number, "status"] = PROCESSING
             frame.at[number, "message"] = "Job log has started; Slurm state is unknown"
@@ -497,7 +491,7 @@ def print_summary(frame, latest):
     print(summary or "No runs in processing state")
 
 
-def run_cycle(collection, input_context, output_context, frame, args):
+def run_cycle(collection, input_context, frame, args):
     latest = latest_run(collection)
     documents = recent_completed_runs(
         collection,
@@ -510,7 +504,7 @@ def run_cycle(collection, input_context, output_context, frame, args):
     pending = frame["status"].isin(PREREQUISITE_STATES)
     frame.loc[pending, "targets"] = targets_for_run()
     frame = update_prerequisites(frame, input_context, args.prerequisites)
-    frame = update_processing(frame, output_context)
+    frame = update_processing(frame)
     save_state(args.state_file, frame)
     if args.submit:
         frame = submit_ready(frame, args.state_file, args.max_submit_per_cycle)
@@ -566,13 +560,12 @@ def main():
 
     collection = xent_collection()
     input_context = make_input_context(args.rucio_path)
-    output_context = make_output_context()
 
     while True:
         try:
             with state_lock(args.state_file):
                 frame = load_state(args.state_file)
-                run_cycle(collection, input_context, output_context, frame, args)
+                run_cycle(collection, input_context, frame, args)
         except Exception as error:
             core.log.exception("Online processing cycle failed: %s", error)
             if args.once:

@@ -60,6 +60,10 @@ straxer \
     --timeout {timeout} \
     --notlazy \
     {extra_options}
+straxer_status=$?
+if [ "$straxer_status" -ne 0 ]; then
+    exit "$straxer_status"
+fi
 echo Processing job ended
 """
 
