@@ -529,7 +529,7 @@ def parse_args():
         help="Submit ready runs. Without this flag the service only monitors state.",
     )
     parser.add_argument("--poll-seconds", type=int, default=60)
-    parser.add_argument("--lookback", type=int, default=20)
+    parser.add_argument("--lookback", type=int, default=100)
     parser.add_argument("--minimum-run", type=int, default=minimum_run_number())
     parser.add_argument(
         "--state-file",

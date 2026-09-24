@@ -169,7 +169,7 @@ def _make_job(run_name: ty.List[str],
               ) -> ProcessingJob:
     rd = get_rundoc(run_name)
     source = rd.get('source', 'none')
-    if source in ('kr-83m', 'rn-220', 'ambe'):
+    if source in ('kr-83m', 'rn-220', 'ambe', 'th-232', 'neutron'):
         submit_ram = ram * float(core.config['processing']['ram_multiplier_for_calibrations'])
     else:
         submit_ram = ram
