@@ -3,6 +3,7 @@
 import os
 
 import cutax
+from reprox import core
 
 
 def xenonnt_online(
@@ -11,9 +12,7 @@ def xenonnt_online(
         **kwargs):
     """Build a test context that can read only the selected input data types."""
     if output_folder is None:
-        output_folder = os.environ.get("REPROX_PROFILE_OUTPUT")
-    if not output_folder:
-        raise ValueError("output_folder or REPROX_PROFILE_OUTPUT is required")
+        output_folder = core.config["context"]["base_folder"]
     st = cutax.contexts.xenonnt_online(output_folder=output_folder, **kwargs)
     output_folder = os.path.realpath(output_folder)
     found_output = False

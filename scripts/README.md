@@ -147,6 +147,10 @@ non-output storage frontends through `take_only`. This reprox context is only
 for isolated tests. Normal processing, including `submit_single.py`, uses
 `cutax.contexts.xenonnt_online` from the ini file.
 
+If the test context is called without `output_folder`, it falls back to the ini
+`[context] base_folder`. `submit_profile.py` provides its private output folder
+explicitly through context kwargs.
+
 Existing higher-level targets in Rucio and other storage frontends are hidden
 from the processing context. This forces the requested targets to be
 recomputed without `straxer --from_scratch`, which would restart from

@@ -87,10 +87,6 @@ def main():
         extra_straxer_options=" ".join(shlex.quote(x) for x in straxer_options),
         working_directory=os.path.dirname(RESOURCE_CACHE),
     )
-    job.submit_kwargs["jobstring"] = (
-        f"export REPROX_PROFILE_OUTPUT={shlex.quote(output_dir)}\n"
-        + job.submit_kwargs["jobstring"]
-    )
     job.submit_kwargs.update(
         log=log_file,
         jobname=f"{run_id}-profile",
