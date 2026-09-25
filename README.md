@@ -85,6 +85,12 @@ waiting_for_input / ready_to_submit -> skipped
 The HDF5 table stores one row per run, including prerequisites, status,
 progress, targets, Slurm job ID, attempts, timestamps, and the latest message:
 
+Each configured prerequisite is stored as its own boolean column. For example,
+the TPC state has `peaklets` and `lone_hits`, while the neutron-veto state has
+`raw_records_nv`. If an existing HDF5 file has different prerequisite columns
+from the selected ini file or `--prerequisites`, the listener reports a schema
+error and exits instead of modifying or replacing the file.
+
 ```python
 import pandas as pd
 runs = pd.read_hdf("/path/to/state/file.h5", key="runs")

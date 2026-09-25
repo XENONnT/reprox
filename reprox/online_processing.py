@@ -38,13 +38,18 @@ COMPLETION_MARKER = "Processing job ended"
 ALREADY_AVAILABLE_MARKER = "This data is already available. Straxer is done"
 DEFAULT_BACKUP_COUNT = 3
 
-STATE_COLUMNS = (
+
+class StateSchemaError(ValueError):
+    """The selected HDF5 state file belongs to different processing inputs."""
+
+
+STATE_PREFIX_COLUMNS = (
     "start",
     "end",
     "mode",
     "source",
-    "peaklets",
-    "lone_hits",
+)
+STATE_SUFFIX_COLUMNS = (
     "status",
     "progress",
     "targets",
@@ -54,6 +59,7 @@ STATE_COLUMNS = (
     "updated_at",
     "message",
 )
+FIXED_STATE_COLUMNS = STATE_PREFIX_COLUMNS + STATE_SUFFIX_COLUMNS
 
 
 def utc_now():
@@ -74,16 +80,64 @@ def state_lock(path):
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
-def empty_state():
+def normalize_prerequisites(prerequisites=None):
+    """Return validated prerequisite names in configured order."""
+    if prerequisites is None:
+        prerequisites = configured_prerequisites()
+    prerequisites = tuple(
+        str(value).strip()
+        for value in prerequisites
+        if str(value).strip()
+    )
+    if not prerequisites:
+        raise ValueError("At least one prerequisite is required")
+    if len(set(prerequisites)) != len(prerequisites):
+        raise ValueError(f"Duplicate prerequisites are not allowed: {prerequisites}")
+    collisions = set(prerequisites).intersection(FIXED_STATE_COLUMNS)
+    if collisions:
+        raise ValueError(
+            f"Prerequisite names collide with fixed state columns: {sorted(collisions)}"
+        )
+    return prerequisites
+
+
+def state_columns(prerequisites=None):
+    prerequisites = normalize_prerequisites(prerequisites)
+    return STATE_PREFIX_COLUMNS + prerequisites + STATE_SUFFIX_COLUMNS
+
+
+def state_prerequisites(frame):
+    """Return the prerequisite columns stored in an existing state table."""
+    return tuple(column for column in frame.columns if column not in FIXED_STATE_COLUMNS)
+
+
+def require_state_schema(frame, prerequisites=None):
+    """Reject state files created for a different prerequisite set."""
+    prerequisites = normalize_prerequisites(prerequisites)
+    missing_fixed = set(FIXED_STATE_COLUMNS) - set(frame.columns)
+    actual_prerequisites = state_prerequisites(frame)
+    if missing_fixed or set(actual_prerequisites) != set(prerequisites):
+        raise StateSchemaError(
+            "State file schema does not match the selected processing inputs. "
+            f"Expected prerequisite columns {list(prerequisites)}, found "
+            f"{list(actual_prerequisites)}; missing fixed columns: "
+            f"{sorted(missing_fixed)}. Use the matching config and HDF5 state file."
+        )
+    return prerequisites
+
+
+def empty_state(prerequisites=None):
     """Create an empty processing state table with stable column types."""
-    frame = pd.DataFrame(
+    prerequisites = normalize_prerequisites(prerequisites)
+    columns = {
+        "start": pd.Series(dtype="datetime64[ns]"),
+        "end": pd.Series(dtype="datetime64[ns]"),
+        "mode": pd.Series(dtype="object"),
+        "source": pd.Series(dtype="object"),
+    }
+    columns.update({name: pd.Series(dtype="bool") for name in prerequisites})
+    columns.update(
         {
-            "start": pd.Series(dtype="datetime64[ns]"),
-            "end": pd.Series(dtype="datetime64[ns]"),
-            "mode": pd.Series(dtype="object"),
-            "source": pd.Series(dtype="object"),
-            "peaklets": pd.Series(dtype="bool"),
-            "lone_hits": pd.Series(dtype="bool"),
             "status": pd.Series(dtype="object"),
             "progress": pd.Series(dtype="float64"),
             "targets": pd.Series(dtype="object"),
@@ -94,61 +148,62 @@ def empty_state():
             "message": pd.Series(dtype="object"),
         }
     )
+    frame = pd.DataFrame(columns)
     frame.index = pd.Index([], dtype="int64", name="run_number")
     return frame
 
 
-def normalize_state(frame):
+def normalize_state(frame, prerequisites=None):
     """Normalize dtypes before storing the state table."""
     frame = frame.copy()
+    prerequisites = require_state_schema(frame, prerequisites)
     frame.index = frame.index.astype("int64")
     frame.index.name = "run_number"
     for column in ("start", "end", "submitted_at", "updated_at"):
         frame[column] = pd.to_datetime(frame[column], errors="coerce")
-    for column in ("peaklets", "lone_hits"):
+    for column in prerequisites:
         frame[column] = frame[column].fillna(False).astype("bool")
     frame["progress"] = frame["progress"].fillna(0.0).astype("float64")
     frame["attempts"] = frame["attempts"].fillna(0).astype("int64")
     for column in ("mode", "source", "status", "targets", "job_id", "message"):
         frame[column] = frame[column].fillna("").astype(str)
-    return frame.loc[:, list(STATE_COLUMNS)].sort_index()
+    return frame.loc[:, list(state_columns(prerequisites))].sort_index()
 
 
-def load_state(path):
+def load_state(path, prerequisites=None):
     """Load the HDF5 state table, or return an empty typed table."""
     if not os.path.exists(path):
-        return empty_state()
+        return empty_state(prerequisites)
     frame = pd.read_hdf(path, key="runs")
-    missing = set(STATE_COLUMNS) - set(frame.columns)
-    if missing:
-        raise ValueError(f"State file is missing columns: {sorted(missing)}")
-    return normalize_state(frame)
+    return normalize_state(frame, prerequisites)
 
 
 def backup_path(path, index):
     return f"{os.path.abspath(path)}.backup-{index}"
 
 
-def load_state_with_backup(path, backup_count=DEFAULT_BACKUP_COUNT):
+def load_state_with_backup(path, backup_count=DEFAULT_BACKUP_COUNT, prerequisites=None):
     """Load state, restoring the newest readable backup if it was deleted."""
     if os.path.exists(path):
-        return load_state(path)
+        return load_state(path, prerequisites)
     for index in range(1, backup_count + 1):
         candidate = backup_path(path, index)
         if not os.path.exists(candidate):
             continue
         try:
-            frame = load_state(candidate)
+            frame = load_state(candidate, prerequisites)
+        except StateSchemaError:
+            raise
         except Exception as error:
             core.log.warning("Cannot read state backup %s: %s", candidate, error)
             continue
-        save_state(path, frame)
+        save_state(path, frame, prerequisites)
         core.log.warning("Restored missing state file from %s", candidate)
         return frame
-    return empty_state()
+    return empty_state(prerequisites)
 
 
-def save_state(path, frame):
+def save_state(path, frame, prerequisites=None):
     """Atomically replace the HDF5 state file."""
     path = os.path.abspath(path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -156,7 +211,7 @@ def save_state(path, frame):
     if os.path.exists(temporary):
         os.remove(temporary)
     try:
-        normalize_state(frame).to_hdf(
+        normalize_state(frame, prerequisites).to_hdf(
             temporary,
             key="runs",
             mode="w",
@@ -291,18 +346,19 @@ def targets_for_run():
 def discover_runs(frame, documents):
     """Add newly completed RunDB documents to the state table."""
     now = utc_now()
+    prerequisites = state_prerequisites(frame)
+    columns = state_columns(prerequisites)
     for document in documents:
         number = int(document["number"])
         if number in frame.index or tag_names(document).intersection(EXCLUDED_TAGS):
             continue
         source = document.get("source") or ""
-        frame.loc[number, list(STATE_COLUMNS)] = [
+        frame.loc[number, list(columns)] = [
             pd.Timestamp(document.get("start")),
             pd.Timestamp(document.get("end")),
             document.get("mode") or "",
             source,
-            False,
-            False,
+            *[False for _ in prerequisites],
             WAITING,
             0.0,
             targets_for_run(),
@@ -336,6 +392,7 @@ def apply_exclusions(frame):
 
 def update_prerequisites(frame, st, prerequisites):
     """Refresh local Rucio availability for runs not submitted yet."""
+    prerequisites = require_state_schema(frame, prerequisites)
     now = utc_now()
     for number in frame.index[frame["status"].isin(PREREQUISITE_STATES)]:
         run_id = f"{int(number):06d}"
@@ -344,12 +401,15 @@ def update_prerequisites(frame, st, prerequisites):
                 dtype: bool(st.is_stored(run_id, dtype))
                 for dtype in prerequisites
             }
-            for dtype in ("peaklets", "lone_hits"):
-                frame.at[number, dtype] = available.get(dtype, False)
+            for dtype in prerequisites:
+                frame.at[number, dtype] = available[dtype]
             ready = all(available.values())
             frame.at[number, "status"] = READY if ready else WAITING
+            missing = [dtype for dtype, stored in available.items() if not stored]
             frame.at[number, "message"] = (
-                "Ready to submit" if ready else "Waiting for local Rucio prerequisites"
+                "Ready to submit"
+                if ready
+                else f"Waiting for local Rucio prerequisites: {', '.join(missing)}"
             )
         except Exception as error:
             frame.at[number, "status"] = WAITING
@@ -523,7 +583,7 @@ def build_job(number, targets):
     )
 
 
-def submit_ready(frame, state_path, max_submit):
+def submit_ready(frame, state_path, max_submit, prerequisites=None):
     """Submit ready runs and persist state after each successful submission."""
     partition = core.config["processing"]["allowed_partitions"].split(",")[0].strip()
     max_jobs = int(core.config["processing"]["max_jobs"])
@@ -559,7 +619,7 @@ def submit_ready(frame, state_path, max_submit):
         frame.at[number, "attempts"] = attempt
         frame.at[number, "updated_at"] = now
         frame.at[number, "message"] = "Submission may be in progress; check Slurm before retrying"
-        save_state(state_path, frame)
+        save_state(state_path, frame, prerequisites)
 
         job.submit(partition=partition, qos=partition)
 
@@ -574,7 +634,7 @@ def submit_ready(frame, state_path, max_submit):
             if job_id
             else "Submission returned without a job ID; check Slurm before retrying"
         )
-        save_state(state_path, frame)
+        save_state(state_path, frame, prerequisites)
         accounted_jobs += 1
         submitted_this_cycle += 1
     return frame
@@ -608,9 +668,14 @@ def run_cycle(collection, input_context, frame, args):
     frame.loc[pending, "targets"] = targets_for_run()
     frame = update_prerequisites(frame, input_context, args.prerequisites)
     frame = update_processing(frame)
-    save_state(args.state_file, frame)
+    save_state(args.state_file, frame, args.prerequisites)
     if args.submit:
-        frame = submit_ready(frame, args.state_file, args.max_submit_per_cycle)
+        frame = submit_ready(
+            frame,
+            args.state_file,
+            args.max_submit_per_cycle,
+            args.prerequisites,
+        )
     print_summary(frame, latest)
     print(f"State file: {args.state_file}")
     return frame
@@ -677,8 +742,7 @@ def main():
         raise ValueError("backup-every-cycles cannot be negative")
     if args.backup_count <= 0:
         raise ValueError("backup-count must be positive")
-    if not args.prerequisites:
-        raise ValueError("At least one prerequisite is required")
+    args.prerequisites = normalize_prerequisites(args.prerequisites)
     if not os.path.isdir(args.rucio_path):
         raise FileNotFoundError(f"Local Rucio path not found: {args.rucio_path}")
 
@@ -690,10 +754,14 @@ def main():
     while True:
         try:
             with state_lock(args.state_file):
-                frame = load_state_with_backup(args.state_file, args.backup_count)
+                frame = load_state_with_backup(
+                    args.state_file,
+                    args.backup_count,
+                    args.prerequisites,
+                )
                 if retry_failed:
                     frame = retry_failed_runs(frame)
-                    save_state(args.state_file, frame)
+                    save_state(args.state_file, frame, args.prerequisites)
                     retry_failed = False
                 run_cycle(collection, input_context, frame, args)
                 successful_cycles += 1
@@ -702,6 +770,9 @@ def main():
                     or successful_cycles % args.backup_every_cycles == 0
                 ):
                     backup_state(args.state_file, args.backup_count)
+        except StateSchemaError:
+            core.log.exception("State-file schema mismatch; listener cannot continue")
+            raise
         except Exception as error:
             core.log.exception("Online processing cycle failed: %s", error)
             if args.once:
