@@ -75,8 +75,12 @@ from the selected ini file or `--prerequisites`, the listener reports a schema
 error and exits instead of modifying or replacing the file.
 
 ```python
+from pathlib import Path
 import pandas as pd
-runs = pd.read_hdf("/path/to/state/file.h5", key="runs")
+from reprox import core
+
+state_file = Path(core.config["context"]["base_folder"]) / "online_processing.h5"
+runs = pd.read_hdf(state_file, key="runs")
 ```
 
 ## Validate and move SR3 output
@@ -235,10 +239,24 @@ filesystem periodically.
 
 ### What if the state file and every backup are lost?
 
-Do not immediately restart submission with a new empty state file. Runs already
-moved to `destination_folder` still exist, but the listener has lost their
-record and may rediscover and resubmit them. First restore an external backup
-or reconstruct the state from Slurm logs and the destination contents.
+The listener starts with an empty table, rediscovers eligible runs, and submits
+them again one by one because it no longer knows their previous status. This
+does not normally repeat the full computation.
+
+Straxer runs inside the job container without force-reloading data, and
+`destination_folder` is visible through the configured cutax/straxen default
+storage. If the requested target is already available, straxer reports
+`This data is already available. Straxer is done` and exits without rebuilding
+it. Reprox then recovers the state from the output location:
+
+- output in `destination_folder` becomes `moved`;
+- output only in `base_folder` becomes `completed`;
+- no output in either location becomes `failed`.
+
+Losing all state files therefore causes some extra Slurm submissions and
+availability checks, but little additional computation for targets that are
+already stored. Restoring a backup is still preferable because it avoids this
+scheduler overhead and preserves job IDs, attempts, timestamps, and messages.
 
 ### Why does the other listener appear stuck?
 
