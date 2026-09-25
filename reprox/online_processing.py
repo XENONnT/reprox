@@ -334,6 +334,27 @@ def log_has_error(text):
     return any(word in ending for word in ("traceback", "killed", "error", "exception"))
 
 
+def retry_failed_runs(frame):
+    """Reset runs that were failed when this listener started."""
+    now = utc_now()
+    failed_runs = list(frame.index[frame["status"] == FAILED])
+    for number in failed_runs:
+        text, _ = read_log(number)
+        if log_has_completed(text) and not log_has_error(text):
+            frame.at[number, "status"] = COMPLETED
+            frame.at[number, "progress"] = 100.0
+            frame.at[number, "message"] = "Recovered completed run from log marker"
+        else:
+            frame.at[number, "status"] = WAITING
+            frame.at[number, "progress"] = 0.0
+            frame.at[number, "job_id"] = ""
+            frame.at[number, "submitted_at"] = pd.NaT
+            frame.at[number, "message"] = "Reset from failed for retry"
+        frame.at[number, "updated_at"] = now
+    core.log.info("Reset or recovered %d failed runs", len(failed_runs))
+    return frame
+
+
 def slurm_state(job_id):
     if not job_id:
         return None
@@ -522,6 +543,11 @@ def parse_args():
         action="store_true",
         help="Submit ready runs. Without this flag the service only monitors state.",
     )
+    parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="Once at startup, reset existing failed runs so they can be submitted again.",
+    )
     parser.add_argument("--poll-seconds", type=int, default=60)
     parser.add_argument("--lookback", type=int, default=100)
     parser.add_argument("--minimum-run", type=int, default=minimum_run_number())
@@ -560,11 +586,16 @@ def main():
 
     collection = xent_collection()
     input_context = make_input_context(args.rucio_path)
+    retry_failed = args.retry_failed
 
     while True:
         try:
             with state_lock(args.state_file):
                 frame = load_state(args.state_file)
+                if retry_failed:
+                    frame = retry_failed_runs(frame)
+                    save_state(args.state_file, frame)
+                    retry_failed = False
                 run_cycle(collection, input_context, frame, args)
         except Exception as error:
             core.log.exception("Online processing cycle failed: %s", error)

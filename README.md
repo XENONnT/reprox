@@ -17,46 +17,53 @@ Can be found either [on github](https://github.com/XENONnT/reprox/blob/master/EX
 
 ## Online processing
 
-`reprox-online-processing` monitors recent completed TPC runs in RunDB, checks
-whether the configured prerequisites are complete on the local Rucio mount,
-tracks submitted jobs, extracts processing progress from straxer logs, and
-records completion when the log contains `Processing job ended`. The submitted
-script only writes this marker after straxer exits with status zero, so the
-listener does not need the same processing-package versions as the container.
+`reprox-online-processing` discovers completed TPC runs in RunDB, waits for
+local Rucio prerequisites, submits jobs, and tracks Slurm and straxer logs. A
+job is complete when its log contains `Processing job ended` without a detected
+error. The marker is only written after straxer exits successfully.
 
-From the repository root, select the SR3 configuration before starting it:
+From the repository root:
 
 ```bash
 export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online.ini"
+STATE_FILE=/path/to/state/file.h5
 ```
 
-Run one monitoring cycle without submitting jobs:
+The default state file is `<base_folder>/online_processing.h5`, which is the
+recommended location. Omit `--state-file` to use that default. Always reuse the
+same file when restarting; using a new file can rediscover and resubmit runs.
+
+Check one cycle without submitting:
 
 ```bash
-reprox-online-processing --once
+PYTHONPATH=. python -m reprox.online_processing \
+  --once \
+  --state-file "$STATE_FILE"
 ```
 
-Monitor continuously without submitting:
+Run continuously with submission enabled:
 
 ```bash
-reprox-online-processing
+PYTHONPATH=. python -u -m reprox.online_processing \
+  --submit \
+  --poll-seconds 60 \
+  --max-submit-per-cycle 1 \
+  --state-file "$STATE_FILE"
 ```
 
-Enable state-driven submission explicitly:
+Use `tmux` for a listener that should survive SSH disconnection:
 
 ```bash
-reprox-online-processing --submit
+tmux new -s reprox-processing
+# Run the continuous command above, then detach with Ctrl-b d.
 ```
-
-By default, at most one ready run is submitted per cycle. Change this limit
-with `--max-submit-per-cycle`; zero uses all capacity below the ini `max_jobs`
-limit.
-For a one-run submission test, use `--once --submit --max-submit-per-cycle 1`.
 
 Set the ini `run_mode` to a comma-separated list of exact RunDB mode names to
 restrict discovery to those modes. Leave it empty to monitor all modes.
+`--max-submit-per-cycle` limits each cycle, while the ini `max_jobs` limits all
+jobs under the current username.
 
-The state machine is:
+Processing states are:
 
 ```text
 waiting_for_input -> ready_to_submit -> submitting -> submitted -> processing -> completed
@@ -64,76 +71,55 @@ waiting_for_input -> ready_to_submit -> submitting -> submitted -> processing ->
 waiting_for_input / ready_to_submit -> skipped
 ```
 
-The default state file is `<base_folder>/online_processing.h5`, with
-`run_number` as its integer index. There is no separate string run ID column;
-the six-digit string is created only when calling strax or Slurm. Read the
-table with:
+The HDF5 table stores one row per run, including prerequisites, status,
+progress, targets, Slurm job ID, attempts, timestamps, and the latest message:
 
 ```python
 import pandas as pd
-
-runs = pd.read_hdf(
-    "/path/to/online_processing.h5",
-    key="runs",
-)
+runs = pd.read_hdf("/path/to/state/file.h5", key="runs")
 ```
 
-The table contains RunDB metadata, local `peaklets` and `lone_hits`
-availability, state, straxer progress percentage, targets, Slurm job ID,
-submission attempts, timestamps, and the latest status message. The file is
-rewritten through a temporary HDF5 file and atomically replaced.
+`submitting` is not retried automatically because Slurm may have accepted the
+job before its ID was saved. Inspect Slurm before changing that state.
 
-After Slurm accepts a job, the returned job ID is saved to HDF5 immediately.
-On restart, use the same state file: submitted runs are checked by job ID with
-`squeue`. `PENDING` remains `submitted`, while `RUNNING` becomes `processing`.
-If a job has left `squeue`, the final log marker still changes it to
-`completed`; rows previously marked `failed` are also rechecked for a delayed
-marker.
-Runs already marked `submitted` or `processing` are not submitted again.
-Runs still waiting for input or submission use the current ini `targets`, so
-changing the configured target also updates those rows on the next cycle.
-Explicitly submitted Kr runs use the requested targets; reprox does not
-automatically change `event_info` to `event_info_double`.
-The SR3 ini excludes `kr-83m` from this online campaign. These runs remain
-visible in the HDF5 table as `skipped`, including runs already waiting or ready
-when the policy is applied. Jobs already submitted continue to be monitored.
+Retry all runs that were already `failed` when the listener starts:
 
-The `submitting` state covers an interruption between starting submission and
-saving the returned job ID. It is not automatically retried, because Slurm may
-have accepted the job. Check Slurm and the output for that run before changing
-its state. Stop the previous service before starting another writer for the
-same HDF5 file.
+```bash
+PYTHONPATH=. python -m reprox.online_processing \
+  --once \
+  --submit \
+  --retry-failed \
+  --state-file "$STATE_FILE"
+```
 
-Prerequisite availability is checked with a context whose only storage is
-`RucioLocalFrontend` at the ini `_rucio_local_path`. This requires the metadata
-and every declared chunk to exist on the mounted local Rucio path. admix
-catalog or replication-rule status alone does not provide that guarantee.
+The reset happens only once at startup, retains the attempt count, and archives
+the old log before resubmission. A failed row whose log already has a clean
+completion marker is repaired to `completed` instead of being resubmitted.
 
 ## Validate and move SR3 output
 
 `reprox-online-validation` reads the same state file as online processing. It
-only performs shallow validation and only handles runs in `completed`,
-`validating`, or `moving`. Before doing any work, it verifies that
-`base_folder` (the online job output directory) and `destination_folder` are on the same filesystem;
-otherwise it exits without moving data.
-By default the move preserves each directory's existing owner, group, and
-permissions. `--group` is only an explicit override.
+shallow-validates completed output in `base_folder`, moves it to
+`destination_folder`, and records `validating -> moving -> moved`. It exits
+without moving if the two directories are on different filesystems. A normal
+move preserves owner, group, and permissions; `--group` is an optional
+override.
 
-Run one validation/move cycle for at most one completed run:
+Run one validation/move cycle:
 
 ```bash
 export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online.ini"
-STATE_FILE=/path/to/online_processing.h5
+STATE_FILE=/path/to/state/file.h5
 PYTHONPATH=. python -m reprox.online_validation \
   --once \
+  --max-runs-per-cycle 1 \
   --state-file "$STATE_FILE"
 ```
 
-Omit `--once` to keep checking once per minute. By default, one run is moved
-per cycle. Use `--run 087210` to select one run or
-`--max-runs-per-cycle 0` to process every completed run.
-
-The HDF5 status advances through `validating` and `moving` to `moved`.
-Validation failures become `validation_failed`. Both online services use a
-shared lock and reload the HDF5 table each cycle, so a `moved` run is retained
-and is not submitted again.
+Both programs use the same `.lock` file to prevent simultaneous HDF5 writes.
+The current lock covers the entire cycle, including slow Rucio checks and
+filesystem moves. It prevents corruption but can make the other listener wait
+for a long time. Therefore, do not run both listeners continuously at the same
+time: stop the processing listener, run validation with `--once`, then restart
+processing. A leftover empty `.lock` file is normal; the kernel lock is
+released automatically when the process exits.
