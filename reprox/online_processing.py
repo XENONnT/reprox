@@ -224,6 +224,15 @@ def configured_run_modes():
     )
 
 
+def configured_detector():
+    """Detector selected for this processing listener."""
+    detector = core.config["context"].get("detector", "tpc").strip()
+    allowed = ("tpc", "neutron_veto", "muon_veto")
+    if detector not in allowed:
+        raise ValueError(f"detector must be one of {allowed}, got {detector!r}")
+    return detector
+
+
 def minimum_run_number():
     value = core.config["context"].get("minimum_run_number", "None")
     return None if value == "None" else int(value)
@@ -244,16 +253,16 @@ def make_input_context(path):
     return st
 
 
-def latest_run(collection):
+def latest_run(collection, detector):
     return collection.find_one(
-        {},
+        {"detectors": detector},
         {"number": 1, "start": 1, "end": 1, "mode": 1, "source": 1},
         sort=[("number", -1)],
     )
 
 
-def recent_completed_runs(collection, minimum_run, lookback, run_modes=()):
-    query = {"end": {"$type": "date"}, "detectors": "tpc"}
+def recent_completed_runs(collection, minimum_run, lookback, detector, run_modes=()):
+    query = {"end": {"$type": "date"}, "detectors": detector}
     if minimum_run is not None:
         query["number"] = {"$gt": minimum_run}
     if run_modes:
@@ -584,11 +593,13 @@ def print_summary(frame, latest):
 
 
 def run_cycle(collection, input_context, frame, args):
-    latest = latest_run(collection)
+    detector = configured_detector()
+    latest = latest_run(collection, detector)
     documents = recent_completed_runs(
         collection,
         args.minimum_run,
         args.lookback,
+        detector,
         configured_run_modes(),
     )
     frame = discover_runs(frame, documents)

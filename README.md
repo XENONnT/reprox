@@ -112,6 +112,33 @@ PYTHONPATH=. python -m reprox.online_validation \
 
 ## Online processing Q&A
 
+### How do I process TPC, neutron-veto, and muon-veto data for the same run?
+
+Run one listener per detector with its own ini file. Linked detector data may
+share a RunDB run number, but each listener records that number in a separate
+HDF5 state file and writes logs and output below a separate `base_folder`.
+
+| Detector | Config | Target | Required Rucio input | Base folder |
+| --- | --- | --- | --- | --- |
+| TPC | `reprocessing_sr3_online.ini` | `event_info` | `peaklets,lone_hits` | `.../sr3/` |
+| Neutron veto | `reprocessing_sr3_online_nv.ini` | `events_nv` | `raw_records_nv` | `.../sr3_nv/` |
+| Muon veto | `reprocessing_sr3_online_mv.ini` | `events_mv` | `raw_records_mv` | `.../sr3_mv/` |
+
+For example, start the neutron-veto listener from the repository root with:
+
+```bash
+export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online_nv.ini"
+PYTHONPATH=. python -u -m reprox.online_processing \
+  --submit \
+  --poll-seconds 60 \
+  --max-submit-per-cycle 1
+```
+
+Omitting `--state-file` uses `<base_folder>/online_processing.h5`, so these
+three configurations automatically use independent state files. Activate the
+same detector-specific config when running `reprox.online_validation` for that
+state file.
+
 ### How do I retry failed runs?
 
 Stop any existing listener, then start one cycle with `--retry-failed`:
