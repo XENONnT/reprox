@@ -22,6 +22,17 @@ local Rucio prerequisites, submits jobs, and tracks Slurm and straxer logs. A
 job is complete when its log contains `Processing job ended` without a detected
 error. The marker is only written after straxer exits successfully.
 
+When a clean log contains `This data is already available. Straxer is done`,
+the listener trusts the availability check performed inside the job container.
+It looks only for directories named `<run_number>-*`, excluding `_temp`
+directories, without matching targets, computing lineage, or checking metadata.
+It records `moved` if run output exists in `destination_folder`, or `completed`
+if it exists only in `base_folder`. Destination takes precedence when both
+folders contain run output. Both statuses set progress to 100%. If neither
+folder contains run output, monitoring marks the run `failed`, even if the log
+also contains `Processing job ended`. Failed-run recovery uses the same location
+check; `--retry-failed` resets unresolved runs for retry.
+
 From the repository root:
 
 ```bash
@@ -116,7 +127,9 @@ PYTHONPATH=. python -m reprox.online_processing \
 At startup, this resets existing `failed` rows to `waiting_for_input`, retains
 their attempt counts, and archives old logs before resubmission. If an old log
 already contains a clean `Processing job ended` marker, the row is repaired to
-`completed` instead. This reset is performed only once per program start.
+`completed` instead. An already-available log recovers to `completed` or `moved`
+according to run output location as described above. This reset is performed only
+once per program start.
 
 A row left in `submitting` is not retried automatically because Slurm may have
 accepted the job before its job ID was written to the state file. Check Slurm
@@ -125,8 +138,8 @@ and the job log before changing such a row.
 ### Why was a run marked as failed even though it left the Slurm queue?
 
 Leaving the queue is not sufficient evidence that processing succeeded. A run
-is marked `completed` only when its log contains `Processing job ended` and no
-recognized error. On restart, the listener checks existing submitted and
+needs a clean `Processing job ended` marker or an already-available message with
+located run output. On restart, the listener checks existing submitted and
 processing runs again, so a clean completion marker can repair a stale state.
 
 ### What happens when I change `excluded_sources`?

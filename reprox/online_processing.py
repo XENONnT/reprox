@@ -3,6 +3,7 @@
 import argparse
 from contextlib import contextmanager
 import fcntl
+import glob
 import os
 import re
 import shutil
@@ -34,6 +35,7 @@ PREREQUISITE_STATES = (WAITING, READY)
 EXCLUDED_TAGS = ("messy", "bad", "abandoned")
 PROGRESS_PATTERN = re.compile(r"([0-9]+(?:\.[0-9]+)?)% into the run")
 COMPLETION_MARKER = "Processing job ended"
+ALREADY_AVAILABLE_MARKER = "This data is already available. Straxer is done"
 DEFAULT_BACKUP_COUNT = 3
 
 STATE_COLUMNS = (
@@ -380,16 +382,38 @@ def log_has_error(text):
     return any(word in ending for word in ("traceback", "killed", "error", "exception"))
 
 
+def completion_result(number, text):
+    """Trust straxer's availability check and locate output by run number only."""
+    if log_has_error(text):
+        return None
+    if ALREADY_AVAILABLE_MARKER in text:
+        run_id = f"{int(number):06d}"
+        # The listener and straxer may use different containers. Do not infer
+        # targets or lineage from the listener's context or the state table.
+        for folder_name, status in (("destination_folder", MOVED), ("base_folder", COMPLETED)):
+            folder = core.config["context"][folder_name]
+            paths = glob.iglob(os.path.join(glob.escape(folder), f"{run_id}-*"))
+            if any(os.path.isdir(path) and not path.endswith("_temp") for path in paths):
+                return status, f"Data already available; run output found in {folder_name}"
+        return FAILED, (
+            "Already-available log but no run output directories in base_folder/destination_folder"
+        )
+    if log_has_completed(text):
+        return COMPLETED, "Processing job ended successfully"
+    return None
+
+
 def retry_failed_runs(frame):
     """Reset runs that were failed when this listener started."""
     now = utc_now()
     failed_runs = list(frame.index[frame["status"] == FAILED])
     for number in failed_runs:
         text, _ = read_log(number)
-        if log_has_completed(text) and not log_has_error(text):
-            frame.at[number, "status"] = COMPLETED
+        result = completion_result(number, text)
+        if result is not None and result[0] != FAILED:
+            frame.at[number, "status"] = result[0]
             frame.at[number, "progress"] = 100.0
-            frame.at[number, "message"] = "Recovered completed run from log marker"
+            frame.at[number, "message"] = result[1]
         else:
             frame.at[number, "status"] = WAITING
             frame.at[number, "progress"] = 0.0
@@ -425,13 +449,14 @@ def update_processing(frame):
         frame.at[number, "progress"] = progress_from_log(text)
         has_error = log_has_error(text)
 
-        # New job scripts only write this marker when straxer exits with zero.
-        # Requiring an error-free log also keeps older unconditional markers
-        # from turning known failures into completed runs.
-        if log_has_completed(text) and not has_error:
-            frame.at[number, "status"] = COMPLETED
-            frame.at[number, "progress"] = 100.0
-            frame.at[number, "message"] = "Processing job ended successfully"
+        # Resolve already-available output before the generic completion
+        # marker, which cannot distinguish local output from moved output.
+        result = completion_result(number, text)
+        if result is not None:
+            frame.at[number, "status"] = result[0]
+            if result[0] != FAILED:
+                frame.at[number, "progress"] = 100.0
+            frame.at[number, "message"] = result[1][:500]
             frame.at[number, "updated_at"] = now
             continue
 
