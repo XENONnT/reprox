@@ -32,20 +32,6 @@ STATE_FILE=/path/to/state/file.h5
 The default state file is `<base_folder>/online_processing.h5`, which is the
 recommended location. Omit `--state-file` to use that default. Always reuse the
 same file when restarting; using a new file can rediscover and resubmit runs.
-The processing listener creates a backup after its first successful cycle and
-then every 10 successful cycles. It retains three rotating copies next to the
-state file:
-
-```text
-online_processing.h5.backup-1  # newest
-online_processing.h5.backup-2
-online_processing.h5.backup-3
-```
-
-If the main HDF5 file is missing, the newest readable backup is restored
-automatically. Configure this with `--backup-every-cycles` and
-`--backup-count`; zero backup interval disables creation. Validation also
-backs up the state after each successful validation/move cycle.
 
 Check one cycle without submitting:
 
@@ -93,23 +79,6 @@ import pandas as pd
 runs = pd.read_hdf("/path/to/state/file.h5", key="runs")
 ```
 
-`submitting` is not retried automatically because Slurm may have accepted the
-job before its ID was saved. Inspect Slurm before changing that state.
-
-Retry all runs that were already `failed` when the listener starts:
-
-```bash
-PYTHONPATH=. python -m reprox.online_processing \
-  --once \
-  --submit \
-  --retry-failed \
-  --state-file "$STATE_FILE"
-```
-
-The reset happens only once at startup, retains the attempt count, and archives
-the old log before resubmission. A failed row whose log already has a clean
-completion marker is repaired to `completed` instead of being resubmitted.
-
 ## Validate and move SR3 output
 
 `reprox-online-validation` reads the same state file as online processing. It
@@ -130,10 +99,96 @@ PYTHONPATH=. python -m reprox.online_validation \
   --state-file "$STATE_FILE"
 ```
 
-Both programs use the same `.lock` file to prevent simultaneous HDF5 writes.
-The current lock covers the entire cycle, including slow Rucio checks and
-filesystem moves. It prevents corruption but can make the other listener wait
-for a long time. Therefore, do not run both listeners continuously at the same
-time: stop the processing listener, run validation with `--once`, then restart
-processing. A leftover empty `.lock` file is normal; the kernel lock is
-released automatically when the process exits.
+## Online processing Q&A
+
+### How do I retry failed runs?
+
+Stop any existing listener, then start one cycle with `--retry-failed`:
+
+```bash
+PYTHONPATH=. python -m reprox.online_processing \
+  --once \
+  --submit \
+  --retry-failed \
+  --state-file "$STATE_FILE"
+```
+
+At startup, this resets existing `failed` rows to `waiting_for_input`, retains
+their attempt counts, and archives old logs before resubmission. If an old log
+already contains a clean `Processing job ended` marker, the row is repaired to
+`completed` instead. This reset is performed only once per program start.
+
+A row left in `submitting` is not retried automatically because Slurm may have
+accepted the job before its job ID was written to the state file. Check Slurm
+and the job log before changing such a row.
+
+### Why was a run marked as failed even though it left the Slurm queue?
+
+Leaving the queue is not sufficient evidence that processing succeeded. A run
+is marked `completed` only when its log contains `Processing job ended` and no
+recognized error. On restart, the listener checks existing submitted and
+processing runs again, so a clean completion marker can repair a stale state.
+
+### What happens when I change `excluded_sources`?
+
+The ini file is read when the listener starts, so restart the listener after
+changing it. Source names are comma-separated. For example:
+
+```ini
+excluded_sources = kr-83m,th-232
+```
+
+Adding a source changes matching runs in `waiting_for_input` or
+`ready_to_submit` to `skipped` on the next cycle. It does not alter runs that
+are already submitted, processing, completed, validating, or moved.
+
+Removing a source affects newly discovered runs, but existing `skipped` rows
+are not automatically restored. To reconsider those rows, their status must be
+reset deliberately after confirming that they were skipped by this policy.
+Do not delete the entire state file just to clear skipped rows.
+
+Except for the special Kr-83m handling, an excluded source must exactly match
+the RunDB `source` value after lower-casing and trimming whitespace. It does not
+match arbitrary text inside `mode`.
+
+### How are state-file backups created and restored?
+
+The processing listener creates a backup after its first successful cycle and
+then every 10 successful cycles. It retains three rotating copies next to the
+state file:
+
+```text
+online_processing.h5.backup-1  # newest
+online_processing.h5.backup-2
+online_processing.h5.backup-3
+```
+
+If the main HDF5 file is missing, the newest readable backup is restored
+automatically. Validation also creates a backup after every successful
+validation/move cycle. A corrupt main file is not replaced automatically; move
+it aside first if you deliberately want startup to restore a backup.
+
+Use `--backup-every-cycles` to change the processing backup interval and
+`--backup-count` to change the number retained. An interval of zero disables
+new processing backups.
+
+These adjacent backups protect against deletion or corruption of the main HDF5
+file, but not against deletion of the whole directory or loss of its filesystem.
+For stronger protection, copy the state file and its backups to another
+filesystem periodically.
+
+### What if the state file and every backup are lost?
+
+Do not immediately restart submission with a new empty state file. Runs already
+moved to `destination_folder` still exist, but the listener has lost their
+record and may rediscover and resubmit them. First restore an external backup
+or reconstruct the state from Slurm logs and the destination contents.
+
+### Why does the other listener appear stuck?
+
+Processing and validation share `<state-file>.lock`, and each currently holds
+the lock for its entire cycle. The second program may therefore wait while the
+first performs slow Rucio checks or filesystem operations. Use one continuous
+processing listener, stop it for a validation `--once` cycle, and then restart
+it. The empty `.lock` file itself is harmless and should not be deleted while a
+listener may be running.
