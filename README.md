@@ -10,10 +10,9 @@
 
 
 ## Documentation
-Please visit [the documentation](https://reprox.readthedocs.io/en/latest/?badge=latest) for installation instructions and examples.
-
-## Examples
-Can be found either [on github](https://github.com/XENONnT/reprox/blob/master/EXAMPLES.md) or the [online documentation](https://reprox.readthedocs.io/en/latest/reference/examples.html).
+Please visit [the documentation](https://reprox.readthedocs.io/en/latest/?badge=latest)
+for package installation and API reference. The SR3 online workflow is
+documented below.
 
 ## Online processing
 
@@ -60,27 +59,11 @@ jobs under the current username.
 Processing states are:
 
 ```text
-waiting_for_input -> ready_to_submit -> submitting -> submitted -> processing -> completed
-                                                                  -> failed
+waiting_for_input -> ready_to_submit -> submitting -> submitted -> processing -> completed -> validating -> moving -> moved
+
 waiting_for_input / ready_to_submit -> skipped
-```
-
-The HDF5 table stores one row per run, including prerequisites, status,
-progress, targets, Slurm job ID, attempts, timestamps, and the latest message:
-
-Each configured prerequisite is stored as its own boolean column. For example,
-the TPC state has `peaklets` and `lone_hits`, while the neutron-veto state has
-`raw_records_nv`. If an existing HDF5 file has different prerequisite columns
-from the selected ini file or `--prerequisites`, the listener reports a schema
-error and exits instead of modifying or replacing the file.
-
-```python
-from pathlib import Path
-import pandas as pd
-from reprox import core
-
-state_file = Path(core.config["context"]["base_folder"]) / "online_processing.h5"
-runs = pd.read_hdf(state_file, key="runs")
+submitted / processing              -> failed
+validating                           -> validation_failed
 ```
 
 ## Validate and move SR3 output
@@ -92,12 +75,13 @@ without moving if the two directories are on different filesystems. A normal
 move preserves owner, group, and permissions; `--group` is an optional
 override.
 
-Run one validation/move cycle:
+Run the validation/move listener continuously alongside online processing,
+using a separate terminal or tmux session:
 
 ```bash
 export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online.ini"
-PYTHONPATH=. python -m reprox.online_validation \
-  --once \
+PYTHONPATH=. python -u -m reprox.online_validation \
+  --poll-seconds 60 \
   --max-runs-per-cycle 1
 ```
 
@@ -170,6 +154,28 @@ PYTHONPATH=. python -m reprox.online_validation \
 
 Always reuse that path when restarting. A new empty state file can rediscover
 and resubmit runs already tracked by the original file.
+
+### How do I inspect the HDF5 state table?
+
+The table stores one row per run, including one boolean column per configured
+prerequisite, status, progress, targets, Slurm job ID, attempts, timestamps,
+and the latest message. For example, the TPC state has `peaklets` and
+`lone_hits`, while the neutron-veto state has `raw_records_nv`.
+
+If an existing HDF5 file has different prerequisite columns from the selected
+ini file or `--prerequisites`, the listener reports a schema error and exits
+without modifying or replacing the file.
+
+After setting `REPROX_CONFIG`, read the default state file with:
+
+```python
+from pathlib import Path
+import pandas as pd
+from reprox import core
+
+state_file = Path(core.config["context"]["base_folder"]) / "online_processing.h5"
+runs = pd.read_hdf(state_file, key="runs")
+```
 
 ### Why was a run marked as failed even though it left the Slurm queue?
 
@@ -262,7 +268,14 @@ scheduler overhead and preserves job IDs, attempts, timestamps, and messages.
 
 Processing and validation share `<state-file>.lock`, and each currently holds
 the lock for its entire cycle. The second program may therefore wait while the
-first performs slow Rucio checks or filesystem operations. Use one continuous
-processing listener, stop it for a validation `--once` cycle, and then restart
-it. The empty `.lock` file itself is harmless and should not be deleted while a
-listener may be running.
+first performs slow Rucio checks or filesystem operations. Both listeners are
+intended to run continuously; the lock safely serializes their access to the
+shared HDF5 file. An empty `.lock` file is normal and should not be deleted
+while a listener may be running.
+
+## Legacy examples
+
+Older workflow examples are available in
+[EXAMPLES.md](https://github.com/XENONnT/reprox/blob/master/EXAMPLES.md) and the
+[online documentation](https://reprox.readthedocs.io/en/latest/reference/examples.html).
+They may not reflect the SR3 online-processing workflow described above.
