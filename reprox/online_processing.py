@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import fcntl
 import os
 import re
+import shutil
 import subprocess
 import time
 
@@ -33,6 +34,7 @@ PREREQUISITE_STATES = (WAITING, READY)
 EXCLUDED_TAGS = ("messy", "bad", "abandoned")
 PROGRESS_PATTERN = re.compile(r"([0-9]+(?:\.[0-9]+)?)% into the run")
 COMPLETION_MARKER = "Processing job ended"
+DEFAULT_BACKUP_COUNT = 3
 
 STATE_COLUMNS = (
     "start",
@@ -121,6 +123,29 @@ def load_state(path):
     return normalize_state(frame)
 
 
+def backup_path(path, index):
+    return f"{os.path.abspath(path)}.backup-{index}"
+
+
+def load_state_with_backup(path, backup_count=DEFAULT_BACKUP_COUNT):
+    """Load state, restoring the newest readable backup if it was deleted."""
+    if os.path.exists(path):
+        return load_state(path)
+    for index in range(1, backup_count + 1):
+        candidate = backup_path(path, index)
+        if not os.path.exists(candidate):
+            continue
+        try:
+            frame = load_state(candidate)
+        except Exception as error:
+            core.log.warning("Cannot read state backup %s: %s", candidate, error)
+            continue
+        save_state(path, frame)
+        core.log.warning("Restored missing state file from %s", candidate)
+        return frame
+    return empty_state()
+
+
 def save_state(path, frame):
     """Atomically replace the HDF5 state file."""
     path = os.path.abspath(path)
@@ -145,6 +170,27 @@ def save_state(path, frame):
             },
         )
         os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.remove(temporary)
+
+
+def backup_state(path, backup_count=DEFAULT_BACKUP_COUNT):
+    """Atomically rotate copies of the current HDF5 state file."""
+    path = os.path.abspath(path)
+    if backup_count <= 0 or not os.path.exists(path):
+        return
+    temporary = f"{path}.backup.tmp"
+    if os.path.exists(temporary):
+        os.remove(temporary)
+    try:
+        shutil.copy2(path, temporary)
+        for index in range(backup_count, 1, -1):
+            previous = backup_path(path, index - 1)
+            current = backup_path(path, index)
+            if os.path.exists(previous):
+                os.replace(previous, current)
+        os.replace(temporary, backup_path(path, 1))
     finally:
         if os.path.exists(temporary):
             os.remove(temporary)
@@ -550,6 +596,18 @@ def parse_args():
     )
     parser.add_argument("--poll-seconds", type=int, default=60)
     parser.add_argument("--lookback", type=int, default=100)
+    parser.add_argument(
+        "--backup-every-cycles",
+        type=int,
+        default=10,
+        help="Back up the state file after this many successful cycles; zero disables backups.",
+    )
+    parser.add_argument(
+        "--backup-count",
+        type=int,
+        default=DEFAULT_BACKUP_COUNT,
+        help="Number of rotating state-file backups to retain.",
+    )
     parser.add_argument("--minimum-run", type=int, default=minimum_run_number())
     parser.add_argument(
         "--state-file",
@@ -579,6 +637,10 @@ def main():
         raise ValueError("poll-seconds and lookback must be positive")
     if args.max_submit_per_cycle < 0:
         raise ValueError("max-submit-per-cycle cannot be negative")
+    if args.backup_every_cycles < 0:
+        raise ValueError("backup-every-cycles cannot be negative")
+    if args.backup_count <= 0:
+        raise ValueError("backup-count must be positive")
     if not args.prerequisites:
         raise ValueError("At least one prerequisite is required")
     if not os.path.isdir(args.rucio_path):
@@ -587,16 +649,23 @@ def main():
     collection = xent_collection()
     input_context = make_input_context(args.rucio_path)
     retry_failed = args.retry_failed
+    successful_cycles = 0
 
     while True:
         try:
             with state_lock(args.state_file):
-                frame = load_state(args.state_file)
+                frame = load_state_with_backup(args.state_file, args.backup_count)
                 if retry_failed:
                     frame = retry_failed_runs(frame)
                     save_state(args.state_file, frame)
                     retry_failed = False
                 run_cycle(collection, input_context, frame, args)
+                successful_cycles += 1
+                if args.backup_every_cycles and (
+                    not os.path.exists(backup_path(args.state_file, 1))
+                    or successful_cycles % args.backup_every_cycles == 0
+                ):
+                    backup_state(args.state_file, args.backup_count)
         except Exception as error:
             core.log.exception("Online processing cycle failed: %s", error)
             if args.once:

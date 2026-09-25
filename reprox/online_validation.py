@@ -160,7 +160,7 @@ def validate_and_move_run(frame, state_path, number, source, destination, group)
 
 def run_cycle(state_path, source, destination, group, run_number, max_runs):
     with online_processing.state_lock(state_path):
-        frame = online_processing.load_state(state_path)
+        frame = online_processing.load_state_with_backup(state_path)
         retry_wrong_path = (
             frame["status"].eq(online_processing.VALIDATION_FAILED)
             & frame["message"].eq(MISSING_OUTPUT_MESSAGE)
@@ -188,6 +188,7 @@ def run_cycle(state_path, source, destination, group, run_number, max_runs):
 
         online_processing.print_summary(frame, latest=None)
         print(f"State file: {state_path}")
+        online_processing.backup_state(state_path)
 
 
 def parse_args():

@@ -32,6 +32,20 @@ STATE_FILE=/path/to/state/file.h5
 The default state file is `<base_folder>/online_processing.h5`, which is the
 recommended location. Omit `--state-file` to use that default. Always reuse the
 same file when restarting; using a new file can rediscover and resubmit runs.
+The processing listener creates a backup after its first successful cycle and
+then every 10 successful cycles. It retains three rotating copies next to the
+state file:
+
+```text
+online_processing.h5.backup-1  # newest
+online_processing.h5.backup-2
+online_processing.h5.backup-3
+```
+
+If the main HDF5 file is missing, the newest readable backup is restored
+automatically. Configure this with `--backup-every-cycles` and
+`--backup-count`; zero backup interval disables creation. Validation also
+backs up the state after each successful validation/move cycle.
 
 Check one cycle without submitting:
 
