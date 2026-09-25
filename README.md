@@ -17,39 +17,23 @@ Can be found either [on github](https://github.com/XENONnT/reprox/blob/master/EX
 
 ## Online processing
 
-`reprox-online-processing` discovers completed TPC runs in RunDB, waits for
-local Rucio prerequisites, submits jobs, and tracks Slurm and straxer logs. A
-job is complete when its log contains `Processing job ended` without a detected
-error. The marker is only written after straxer exits successfully.
-
-When a clean log contains `This data is already available. Straxer is done`,
-the listener trusts the availability check performed inside the job container.
-It looks only for directories named `<run_number>-*`, excluding `_temp`
-directories, without matching targets, computing lineage, or checking metadata.
-It records `moved` if run output exists in `destination_folder`, or `completed`
-if it exists only in `base_folder`. Destination takes precedence when both
-folders contain run output. Both statuses set progress to 100%. If neither
-folder contains run output, monitoring marks the run `failed`, even if the log
-also contains `Processing job ended`. Failed-run recovery uses the same location
-check; `--retry-failed` resets unresolved runs for retry.
+`reprox-online-processing` discovers completed runs for the configured detector
+in RunDB, waits for local Rucio prerequisites, submits jobs, and tracks Slurm
+and straxer logs. A job is complete when its log contains
+`Processing job ended` without a detected error.
 
 From the repository root:
 
 ```bash
 export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online.ini"
-STATE_FILE=/path/to/state/file.h5
 ```
 
-The default state file is `<base_folder>/online_processing.h5`, which is the
-recommended location. Omit `--state-file` to use that default. Always reuse the
-same file when restarting; using a new file can rediscover and resubmit runs.
+The state is stored automatically at `<base_folder>/online_processing.h5`.
 
 Check one cycle without submitting:
 
 ```bash
-PYTHONPATH=. python -m reprox.online_processing \
-  --once \
-  --state-file "$STATE_FILE"
+PYTHONPATH=. python -m reprox.online_processing --once
 ```
 
 Run continuously with submission enabled:
@@ -58,8 +42,7 @@ Run continuously with submission enabled:
 PYTHONPATH=. python -u -m reprox.online_processing \
   --submit \
   --poll-seconds 60 \
-  --max-submit-per-cycle 1 \
-  --state-file "$STATE_FILE"
+  --max-submit-per-cycle 1
 ```
 
 Use `tmux` for a listener that should survive SSH disconnection:
@@ -109,11 +92,9 @@ Run one validation/move cycle:
 
 ```bash
 export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online.ini"
-STATE_FILE=/path/to/state/file.h5
 PYTHONPATH=. python -m reprox.online_validation \
   --once \
-  --max-runs-per-cycle 1 \
-  --state-file "$STATE_FILE"
+  --max-runs-per-cycle 1
 ```
 
 ## Online processing Q&A
@@ -153,8 +134,7 @@ Stop any existing listener, then start one cycle with `--retry-failed`:
 PYTHONPATH=. python -m reprox.online_processing \
   --once \
   --submit \
-  --retry-failed \
-  --state-file "$STATE_FILE"
+  --retry-failed
 ```
 
 At startup, this resets existing `failed` rows to `waiting_for_input`, retains
@@ -168,12 +148,42 @@ A row left in `submitting` is not retried automatically because Slurm may have
 accepted the job before its job ID was written to the state file. Check Slurm
 and the job log before changing such a row.
 
+### How do I use a non-default state file?
+
+Normally no option is needed: both listeners use
+`<base_folder>/online_processing.h5`. Only pass `--state-file` when deliberately
+using another location, and give the same path to processing and validation:
+
+```bash
+PYTHONPATH=. python -m reprox.online_processing \
+  --once \
+  --state-file /path/to/state/file.h5
+
+PYTHONPATH=. python -m reprox.online_validation \
+  --once \
+  --state-file /path/to/state/file.h5
+```
+
+Always reuse that path when restarting. A new empty state file can rediscover
+and resubmit runs already tracked by the original file.
+
 ### Why was a run marked as failed even though it left the Slurm queue?
 
 Leaving the queue is not sufficient evidence that processing succeeded. A run
 needs a clean `Processing job ended` marker or an already-available message with
 located run output. On restart, the listener checks existing submitted and
 processing runs again, so a clean completion marker can repair a stale state.
+
+### What happens when straxer says the data is already available?
+
+For a clean log containing `This data is already available. Straxer is done`,
+the listener trusts the availability check performed inside the job container.
+It looks for `<run_number>-*` output directories, excluding `_temp`, without
+loading data or calculating lineage in the listener environment.
+
+The run becomes `moved` if output exists in `destination_folder`, or
+`completed` if output exists only in `base_folder`. If neither location contains
+run output, it becomes `failed`. Failed-run recovery applies the same rule.
 
 ### What happens when I change `excluded_sources`?
 
