@@ -4,6 +4,7 @@ import argparse
 import glob
 import os
 import time
+from collections import Counter
 
 from reprox import core, validate_run
 from reprox import online_processing
@@ -18,7 +19,7 @@ MISSING_OUTPUT_MESSAGE = "No output directories found in source or destination"
 
 
 def configured_paths():
-    # reprox.contexts.xenonnt_online writes job output directly to base_folder.
+    # The state file stays in base_folder; output may also be in strax_data.
     source = os.path.abspath(core.config["context"]["base_folder"])
     destination = os.path.abspath(core.config["context"]["destination_folder"])
     return source, destination
@@ -48,6 +49,15 @@ def run_folders(folder, number):
     )
 
 
+def source_run_folders(source, number):
+    """Find both reprox output and cutax's default ./strax_data output."""
+    paths = run_folders(source, number) + run_folders(
+        os.path.join(source, "strax_data"), number
+    )
+    # Do not process the same directory twice if a source path is a symlink.
+    return sorted({os.path.realpath(path): path for path in paths}.values())
+
+
 def set_status(frame, state_path, number, status, message):
     frame.at[number, "status"] = status
     frame.at[number, "message"] = message[:500]
@@ -57,7 +67,7 @@ def set_status(frame, state_path, number, status, message):
 
 def validate_and_move_run(frame, state_path, number, source, destination, group):
     """Shallow-validate and move every output directory for one run."""
-    source_folders = run_folders(source, number)
+    source_folders = source_run_folders(source, number)
     destination_folders = run_folders(destination, number)
 
     # Recover cleanly if movement finished before the HDF state was updated.
@@ -78,6 +88,21 @@ def validate_and_move_run(frame, state_path, number, source, destination, group)
                 online_processing.VALIDATION_FAILED,
                 MISSING_OUTPUT_MESSAGE,
             )
+        return
+
+    duplicate_names = sorted(
+        name for name, count in Counter(
+            os.path.basename(path) for path in source_folders
+        ).items() if count > 1
+    )
+    if duplicate_names:
+        set_status(
+            frame,
+            state_path,
+            number,
+            online_processing.VALIDATION_FAILED,
+            "Duplicate output directories across sources: " + ", ".join(duplicate_names),
+        )
         return
 
     collisions = [
@@ -120,6 +145,11 @@ def validate_and_move_run(frame, state_path, number, source, destination, group)
             "; ".join(failures),
         )
         return
+
+    # A nested output directory can itself be a mount or a symlink.
+    # Check every directory before moving any of this run's output.
+    for path in source_folders:
+        require_same_filesystem(path, destination)
 
     set_status(
         frame,
@@ -170,6 +200,14 @@ def run_cycle(state_path, source, destination, group, run_number, max_runs):
         ]
         if run_number is not None:
             candidates = candidates[candidates == run_number]
+        # Retry missing-output failures only once output appears, so an absent
+        # run cannot consume every cycle when max_runs is one.
+        candidates = [
+            number for number in candidates
+            if not retry_wrong_path.at[number]
+            or source_run_folders(source, number)
+            or run_folders(destination, number)
+        ]
         if max_runs:
             candidates = candidates[:max_runs]
 

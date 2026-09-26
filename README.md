@@ -69,11 +69,18 @@ validating                           -> validation_failed
 ## Validate and move SR3 output
 
 `reprox-online-validation` reads the same state file as online processing. It
-shallow-validates completed output in `base_folder`, moves it to
+shallow-validates completed output in both `base_folder` and
+`base_folder/strax_data` (cutax's default output location), moves it to
 `destination_folder`, and records `validating -> moving -> moved`. It exits
 without moving if the two directories are on different filesystems. A normal
 move preserves owner, group, and permissions; `--group` is an optional
 override.
+
+Runs that failed with `No output directories found in source or destination`
+are retried automatically once output is found in either source or the destination.
+Missing output does not block later completed runs. Duplicate directory names
+across the two sources, or a source and destination, are reported without moving
+any output for that run.
 
 Run the validation/move listener continuously alongside online processing,
 using a separate terminal or tmux session:
