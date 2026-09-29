@@ -143,6 +143,24 @@ A row left in `submitting` is not retried automatically because Slurm may have
 accepted the job before its job ID was written to the state file. Check Slurm
 and the job log before changing such a row.
 
+For `validation_failed` rows, use the validation listener with the same detector
+configuration and state file:
+
+```bash
+PYTHONPATH=. python -m reprox.online_validation --once --clear-failed
+# Limit the reset and validation to one run:
+PYTHONPATH=. python -m reprox.online_validation --once --clear-failed --run 123456
+```
+
+`--retry-failed` is an alias for `--clear-failed` in this command. Once at startup,
+it backs up the state under the state lock and resets matching `validation_failed`
+rows to `waiting_for_input`, clearing progress, job ID, and submission time while
+retaining attempt counts. The processing listener needs `--submit` to resubmit
+these runs when their prerequisites are available. Other statuses are unchanged
+by the reset; the normal validation cycle then continues. Output files are not
+deleted or repaired, so path errors, corrupt outputs, or destination collisions
+may still need attention before retrying.
+
 ### How do I use a non-default state file?
 
 Normally no option is needed: both listeners use

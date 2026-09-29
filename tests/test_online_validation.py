@@ -3,6 +3,7 @@
 import json
 from unittest.mock import Mock
 
+import pandas as pd
 import pytest
 
 from reprox import online_processing as online
@@ -117,3 +118,37 @@ def test_already_partly_moved_run_finishes(job):
     validation.validate_and_move_run(frame, state, 123, base, destination, None)
     assert frame.at[123, "status"] == online.MOVED
     assert previous.exists() and (destination / remaining.name).exists()
+
+
+@pytest.mark.parametrize("run_number, reset", [(None, [1, 2]), (2, [2]), (99, [])])
+def test_clear_failed_scope_and_preserved_history(run_number, reset):
+    frame = pd.DataFrame({
+        "status": [online.VALIDATION_FAILED, online.VALIDATION_FAILED,
+                   online.FAILED, online.COMPLETED, online.MOVED],
+        "progress": [100.0] * 5,
+        "job_id": ["123"] * 5,
+        "submitted_at": [pd.Timestamp("2026-01-01")] * 5,
+        "updated_at": [pd.Timestamp("2026-01-01")] * 5,
+        "message": ["old message"] * 5,
+        "attempts": [3] * 5,
+        "targets": ["events_nv"] * 5,
+    }, index=[1, 2, 3, 4, 5])
+    before = frame.copy(deep=True)
+    validation.clear_failed_runs(frame, run_number)
+    for number in reset:
+        assert frame.at[number, "status"] == online.WAITING
+        assert frame.at[number, "progress"] == 0.0
+        assert frame.at[number, "job_id"] == ""
+        assert pd.isna(frame.at[number, "submitted_at"])
+    untouched = frame.index.difference(reset)
+    pd.testing.assert_frame_equal(frame.loc[untouched], before.loc[untouched])
+    pd.testing.assert_frame_equal(frame[["attempts", "targets"]],
+                                  before[["attempts", "targets"]])
+
+
+@pytest.mark.parametrize("flag", ["--clear-failed", "--retry-failed"])
+def test_clear_failed_cli(monkeypatch, flag):
+    monkeypatch.setattr("sys.argv", ["reprox-online-validation", flag, "--run", "2"])
+    args = validation.parse_args()
+    assert args.clear_failed
+    assert args.run == 2

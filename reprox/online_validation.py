@@ -6,6 +6,8 @@ import os
 import time
 from collections import Counter
 
+import pandas as pd
+
 from reprox import core, validate_run
 from reprox import online_processing
 
@@ -188,9 +190,28 @@ def validate_and_move_run(frame, state_path, number, source, destination, group)
     )
 
 
-def run_cycle(state_path, source, destination, group, run_number, max_runs):
+def clear_failed_runs(frame, run_number=None):
+    """Return validation failures to processing without trusting old job logs."""
+    mask = frame["status"].eq(online_processing.VALIDATION_FAILED)
+    if run_number is not None:
+        mask &= frame.index == run_number
+    frame.loc[mask, "status"] = online_processing.WAITING
+    frame.loc[mask, "progress"] = 0.0
+    frame.loc[mask, "job_id"] = ""
+    frame.loc[mask, "submitted_at"] = pd.NaT
+    frame.loc[mask, "updated_at"] = online_processing.utc_now()
+    frame.loc[mask, "message"] = "Reset from validation_failed for reprocessing"
+    core.log.info("Reset %d validation_failed runs for reprocessing", int(mask.sum()))
+
+
+def run_cycle(state_path, source, destination, group, run_number, max_runs,
+              clear_failed=False):
     with online_processing.state_lock(state_path):
         frame = online_processing.load_state_with_backup(state_path)
+        if clear_failed:
+            online_processing.backup_state(state_path)
+            clear_failed_runs(frame, run_number)
+            online_processing.save_state(state_path, frame)
         retry_wrong_path = (
             frame["status"].eq(online_processing.VALIDATION_FAILED)
             & frame["message"].eq(MISSING_OUTPUT_MESSAGE)
@@ -236,6 +257,12 @@ def parse_args():
     parser.add_argument("--poll-seconds", type=int, default=60)
     parser.add_argument("--run", type=int, help="Only process this run number.")
     parser.add_argument(
+        "--clear-failed", "--retry-failed",
+        action="store_true",
+        help="Once at startup, reset validation_failed runs to waiting_for_input "
+             "for reprocessing; respects --run and preserves attempts and output files.",
+    )
+    parser.add_argument(
         "--max-runs-per-cycle",
         type=int,
         default=1,
@@ -263,6 +290,7 @@ def main():
     source, destination = configured_paths()
     require_same_filesystem(source, destination)
 
+    clear_failed = args.clear_failed
     while True:
         run_cycle(
             args.state_file,
@@ -271,7 +299,9 @@ def main():
             args.group,
             args.run,
             args.max_runs_per_cycle,
+            clear_failed=clear_failed,
         )
+        clear_failed = False
         if args.once:
             break
         time.sleep(args.poll_seconds)
