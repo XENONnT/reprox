@@ -23,6 +23,7 @@ SUBMITTING = "submitting"
 SUBMITTED = "submitted"
 PROCESSING = "processing"
 COMPLETED = "completed"
+ALREADY_AVAILABLE = "already_available"
 FAILED = "failed"
 SKIPPED = "skipped"
 VALIDATING = "validating"
@@ -464,8 +465,9 @@ def completion_result(number, text):
             paths = glob.iglob(os.path.join(glob.escape(folder), f"{run_id}-*"))
             if any(os.path.isdir(path) and not path.endswith("_temp") for path in paths):
                 return status, f"Data already available; run output found in {folder_name}"
-        return FAILED, (
-            "Already-available log but no run output directories in base_folder/destination_folder"
+        return ALREADY_AVAILABLE, (
+            "Straxer reports data already available; no local output found; "
+            "skipping validation/move (storage location not verified)"
         )
     if log_has_completed(text):
         return COMPLETED, "Processing job ended successfully"

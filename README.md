@@ -135,7 +135,7 @@ PYTHONPATH=. python -m reprox.online_processing \
 At startup, this resets existing `failed` rows to `waiting_for_input`, retains
 their attempt counts, and archives old logs before resubmission. If an old log
 already contains a clean `Processing job ended` marker, the row is repaired to
-`completed` instead. An already-available log recovers to `completed` or `moved`
+`completed` instead. An already-available log recovers to `completed`, `moved`, or `already_available`
 according to run output location as described above. This reset is performed only
 once per program start.
 
@@ -205,8 +205,8 @@ runs = pd.read_hdf(state_file, key="runs")
 ### Why was a run marked as failed even though it left the Slurm queue?
 
 Leaving the queue is not sufficient evidence that processing succeeded. A run
-needs a clean `Processing job ended` marker or an already-available message with
-located run output. On restart, the listener checks existing submitted and
+needs a clean `Processing job ended` marker or a clean already-available message.
+On restart, the listener checks existing submitted and
 processing runs again, so a clean completion marker can repair a stale state.
 
 ### What happens when straxer says the data is already available?
@@ -218,7 +218,11 @@ loading data or calculating lineage in the listener environment.
 
 The run becomes `moved` if output exists in `destination_folder`, or
 `completed` if output exists only in `base_folder`. If neither location contains
-run output, it becomes `failed`. Failed-run recovery applies the same rule.
+run output, it becomes `already_available` with progress 100%. This is a terminal
+state: no resubmission, validation, or move is attempted. It trusts the job's log;
+the external storage location (including whether it is Rucio) is not verified.
+Existing `failed` rows with a clean already-available log recover automatically
+on the next processing cycle. Failed-run recovery applies the same rule.
 
 ### What happens when I change `excluded_sources`?
 

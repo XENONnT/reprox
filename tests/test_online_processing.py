@@ -79,8 +79,10 @@ def test_retry_recovers_available_output(job, monkeypatch, location, expected):
 
 
 @pytest.mark.parametrize("invalid", ["missing", "temporary", "file", "different_run"])
-def test_missing_run_output_cannot_use_generic_completion(job, monkeypatch, invalid):
+@pytest.mark.parametrize("initial", [online.SUBMITTED, online.FAILED])
+def test_already_available_without_local_output_is_terminal(job, monkeypatch, invalid, initial):
     frame, base, _, _ = job
+    frame.at[123, "status"] = initial
     if invalid == "temporary":
         write_output(base, "000123-event_info-containerhash_temp")
     elif invalid == "file":
@@ -89,8 +91,14 @@ def test_missing_run_output_cannot_use_generic_completion(job, monkeypatch, inva
         write_output(base, "0001234-event_info-containerhash")
     set_log(monkeypatch, online.ALREADY_AVAILABLE_MARKER + "\n" + online.COMPLETION_MARKER)
     online.update_processing(frame)
-    assert frame.at[123, "status"] == online.FAILED
-    assert "no run output directories" in frame.at[123, "message"]
+    assert frame.at[123, "status"] == online.ALREADY_AVAILABLE
+    assert frame.at[123, "progress"] == 100.0
+    assert "storage location not verified" in frame.at[123, "message"]
+    before = frame.copy(deep=True)
+    set_log(monkeypatch, "Traceback: stale log")
+    online.update_processing(frame)
+    online.retry_failed_runs(frame)
+    assert frame.equals(before)
 
 
 @pytest.mark.parametrize("targets", ["event_info event_info_double", "different_target", ""])
