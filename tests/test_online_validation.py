@@ -6,12 +6,13 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 
-from reprox import online_processing as online
+from reprox import core, online_processing as online
 from reprox import online_validation as validation
 
 
 @pytest.fixture
-def job(tmp_path):
+def job(tmp_path, monkeypatch):
+    monkeypatch.setitem(core.config["context"], "detector", "tpc")
     base = tmp_path / "base"
     nested = base / "strax_data"
     destination = tmp_path / "destination"
@@ -118,6 +119,32 @@ def test_already_partly_moved_run_finishes(job):
     validation.validate_and_move_run(frame, state, 123, base, destination, None)
     assert frame.at[123, "status"] == online.MOVED
     assert previous.exists() and (destination / remaining.name).exists()
+
+
+def test_nv_validation_ignores_tpc_destination(job, monkeypatch):
+    frame, state, base, nested, destination = job
+    monkeypatch.setitem(core.config["context"], "detector", "neutron_veto")
+    tpc = output(destination)
+    validation.validate_and_move_run(frame, state, 123, base, destination, None)
+    assert frame.at[123, "status"] == online.VALIDATION_FAILED
+    assert frame.at[123, "message"] == validation.MISSING_OUTPUT_MESSAGE
+    nv = output(nested, dtype="events_nv")
+    validation.validate_and_move_run(frame, state, 123, base, destination, None)
+    assert frame.at[123, "status"] == online.MOVED
+    assert "moved 1 output directories" in frame.at[123, "message"]
+    assert tpc.exists() and (destination / nv.name).exists()
+
+
+def test_temporary_nv_source_is_rejected(job, monkeypatch):
+    frame, state, base, nested, destination = job
+    monkeypatch.setitem(core.config["context"], "detector", "neutron_veto")
+    nv = output(nested, dtype="events_nv")
+    temporary = nv.with_name(nv.name + "_temp")
+    nv.rename(temporary)
+    validation.validate_and_move_run(frame, state, 123, base, destination, None)
+    assert frame.at[123, "status"] == online.VALIDATION_FAILED
+    assert "is_temp_folder" in frame.at[123, "message"]
+    assert temporary.exists()
 
 
 @pytest.mark.parametrize("run_number, reset", [(None, [1, 2]), (2, [2]), (99, [])])

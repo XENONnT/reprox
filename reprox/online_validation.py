@@ -1,7 +1,6 @@
 """Shallow-validate completed online runs, move them, and update state."""
 
 import argparse
-import glob
 import os
 import time
 from collections import Counter
@@ -43,12 +42,8 @@ def require_same_filesystem(source, destination):
 
 
 def run_folders(folder, number):
-    run_id = f"{int(number):06d}"
-    return sorted(
-        path
-        for path in glob.glob(os.path.join(folder, f"{run_id}-*"))
-        if os.path.isdir(path)
-    )
+    # Include temporary folders so SHALLOW validation can reject incomplete data.
+    return online_processing.run_output_folders(folder, number, include_temporary=True)
 
 
 def source_run_folders(source, number):

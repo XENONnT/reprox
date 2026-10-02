@@ -15,6 +15,7 @@ def job(tmp_path, monkeypatch):
     destination.mkdir()
     monkeypatch.setitem(core.config["context"], "base_folder", str(base))
     monkeypatch.setitem(core.config["context"], "destination_folder", str(destination))
+    monkeypatch.setitem(core.config["context"], "detector", "tpc")
     monkeypatch.setitem(core.config["processing"], "ignore_patterns_in_logs", "UserWarning")
     monkeypatch.setattr(core, "get_context", Mock(side_effect=AssertionError("No context lookup")))
     frame = online.discover_runs(online.empty_state(), [{"number": 123}])
@@ -125,4 +126,43 @@ def test_normal_completion_needs_no_storage_lookup(job, monkeypatch):
     set_log(monkeypatch, online.COMPLETION_MARKER)
     online.update_processing(frame)
     assert frame.at[123, "status"] == online.COMPLETED
+    core.get_context.assert_not_called()
+
+
+@pytest.mark.parametrize("detector,dtype", [("neutron_veto", "events_nv"),
+                                           ("muon_veto", "events_mv")])
+def test_nested_veto_output_is_not_moved_by_tpc_destination(job, monkeypatch, detector, dtype):
+    frame, base, destination, _ = job
+    monkeypatch.setitem(core.config["context"], "detector", detector)
+    nested = base / "strax_data"
+    nested.mkdir()
+    write_output(nested, f"000123-{dtype}-containerhash")
+    write_output(destination)
+    set_log(monkeypatch, online.ALREADY_AVAILABLE_MARKER)
+    online.update_processing(frame)
+    assert frame.at[123, "status"] == online.COMPLETED
+    core.get_context.assert_not_called()
+
+
+@pytest.mark.parametrize("detector,foreign_dtype", [
+    ("neutron_veto", "event_info"), ("neutron_veto", "events_mv"),
+    ("muon_veto", "events_nv"), ("tpc", "events_nv"), ("tpc", "events_mv"),
+])
+def test_other_detector_output_does_not_mark_moved(job, monkeypatch, detector, foreign_dtype):
+    frame, _, destination, _ = job
+    monkeypatch.setitem(core.config["context"], "detector", detector)
+    write_output(destination, f"000123-{foreign_dtype}-differenthash")
+    set_log(monkeypatch, online.ALREADY_AVAILABLE_MARKER)
+    online.update_processing(frame)
+    assert frame.at[123, "status"] == online.ALREADY_AVAILABLE
+
+
+def test_veto_destination_needs_no_target_or_lineage_match(job, monkeypatch):
+    frame, _, destination, _ = job
+    monkeypatch.setitem(core.config["context"], "detector", "neutron_veto")
+    frame.at[123, "targets"] = "different_target"
+    write_output(destination, "000123-hitlets_nv-containerhash")
+    set_log(monkeypatch, online.ALREADY_AVAILABLE_MARKER)
+    online.update_processing(frame)
+    assert frame.at[123, "status"] == online.MOVED
     core.get_context.assert_not_called()

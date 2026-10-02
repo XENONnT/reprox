@@ -213,16 +213,24 @@ processing runs again, so a clean completion marker can repair a stale state.
 
 For a clean log containing `This data is already available. Straxer is done`,
 the listener trusts the availability check performed inside the job container.
-It looks for `<run_number>-*` output directories, excluding `_temp`, without
-loading data or calculating lineage in the listener environment.
+It looks for `<run_number>-<data_type>-<hash>` output directories, excluding
+`_temp`, without loading data or calculating lineage in the listener environment.
+The configured detector limits this search: `_nv` data types belong to the
+neutron veto, `_mv` to the muon veto, and other data types to the TPC. A TPC
+directory in the shared destination cannot mark an NV run as moved. Exact target
+names and lineage hashes are still not inferred from the listener's context.
 
 The run becomes `moved` if output exists in `destination_folder`, or
-`completed` if output exists only in `base_folder`. If neither location contains
-run output, it becomes `already_available` with progress 100%. This is a terminal
+`completed` if output exists only in `base_folder` or `base_folder/strax_data`.
+If none of these locations contains output for this detector,
+it becomes `already_available` with progress 100%. This is a terminal
 state: no resubmission, validation, or move is attempted. It trusts the job's log;
 the external storage location (including whether it is Rucio) is not verified.
 Existing `failed` rows with a clean already-available log recover automatically
 on the next processing cycle. Failed-run recovery applies the same rule.
+Validation uses the same detector filter, including when recovering a move that
+finished before its state update. Temporary source folders remain visible to
+validation so they are rejected rather than silently skipped.
 
 ### What happens when I change `excluded_sources`?
 
@@ -258,6 +266,12 @@ online_processing.h5.backup-2
 online_processing.h5.backup-3
 ```
 
+State writes are read back and compared with the complete expected table before
+the temporary file is flushed and atomically replaces the main file. Empty
+tables use fixed HDF format so the `runs` key remains readable. Backup copies
+are also read and checked before any existing backup is rotated. Failed writes,
+unreadable HDF files, and flush errors leave the previous state/backups in place.
+
 If the main HDF5 file is missing, the newest readable backup is restored
 automatically. Validation also creates a backup after every successful
 validation/move cycle. A corrupt main file is not replaced automatically; move
@@ -284,9 +298,9 @@ storage. If the requested target is already available, straxer reports
 `This data is already available. Straxer is done` and exits without rebuilding
 it. Reprox then recovers the state from the output location:
 
-- output in `destination_folder` becomes `moved`;
-- output only in `base_folder` becomes `completed`;
-- no output in either location becomes `failed`.
+- this detector's output in `destination_folder` becomes `moved`;
+- output only in `base_folder` or `base_folder/strax_data` becomes `completed`;
+- no local output for this detector becomes terminal `already_available`.
 
 Losing all state files therefore causes some extra Slurm submissions and
 availability checks, but little additional computation for targets that are

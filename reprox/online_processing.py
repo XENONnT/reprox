@@ -204,29 +204,53 @@ def load_state_with_backup(path, backup_count=DEFAULT_BACKUP_COUNT, prerequisite
     return empty_state(prerequisites)
 
 
+def validate_state_file(path, expected=None):
+    """Require a readable state table before publishing or rotating a file."""
+    try:
+        frame = pd.read_hdf(path, key="runs")
+        require_state_schema(frame, state_prerequisites(frame))
+        if expected is not None:
+            pd.testing.assert_frame_equal(frame, expected)
+    except Exception as error:
+        raise RuntimeError(f"Refusing invalid state file {path}: {error}") from error
+
+
+def sync_state_file(path):
+    """Flush file contents before an atomic rename publishes them."""
+    with open(path, "rb+") as handle:
+        os.fsync(handle.fileno())
+
+
 def save_state(path, frame, prerequisites=None):
-    """Atomically replace the HDF5 state file."""
+    """Read back and atomically publish a complete HDF5 state table."""
     path = os.path.abspath(path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     temporary = f"{path}.tmp"
     if os.path.exists(temporary):
         os.remove(temporary)
     try:
-        normalize_state(frame, prerequisites).to_hdf(
-            temporary,
-            key="runs",
-            mode="w",
-            format="table",
-            data_columns=("status", "mode", "source"),
-            min_itemsize={
-                "mode": 64,
-                "source": 32,
-                "status": 32,
-                "targets": 256,
-                "job_id": 64,
-                "message": 512,
-            },
-        )
+        expected = normalize_state(frame, prerequisites)
+        if expected.empty:
+            # PyTables table format does not create a key for an empty frame.
+            expected.to_hdf(temporary, key="runs", mode="w", format="fixed")
+        else:
+            expected.to_hdf(
+                temporary,
+                key="runs",
+                mode="w",
+                format="table",
+                data_columns=("status", "mode", "source"),
+                min_itemsize={
+                    "mode": 64,
+                    "source": 32,
+                    "status": 32,
+                    "targets": 256,
+                    "job_id": 64,
+                    "message": 512,
+                },
+            )
+        validate_state_file(temporary, expected)
+        sync_state_file(temporary)
         os.replace(temporary, path)
     finally:
         if os.path.exists(temporary):
@@ -243,6 +267,8 @@ def backup_state(path, backup_count=DEFAULT_BACKUP_COUNT):
         os.remove(temporary)
     try:
         shutil.copy2(path, temporary)
+        validate_state_file(temporary)
+        sync_state_file(temporary)
         for index in range(backup_count, 1, -1):
             previous = backup_path(path, index - 1)
             current = backup_path(path, index)
@@ -452,18 +478,40 @@ def log_has_error(text):
     return any(word in ending for word in ("traceback", "killed", "error", "exception"))
 
 
+def run_output_folders(folder, number, include_temporary=False):
+    """Find this detector's output without deriving targets or lineage."""
+    run_id = f"{int(number):06d}"
+    detector = configured_detector()
+    paths = []
+    for path in glob.iglob(os.path.join(glob.escape(os.fspath(folder)), f"{run_id}-*")):
+        parts = os.path.basename(path).split("-")
+        if len(parts) != 3 or parts[0] != run_id or not os.path.isdir(path):
+            continue
+        if not include_temporary and path.endswith("_temp"):
+            continue
+        data_type = parts[1]
+        output_detector = (
+            "neutron_veto" if data_type.endswith("_nv") else
+            "muon_veto" if data_type.endswith("_mv") else "tpc"
+        )
+        if output_detector == detector:
+            paths.append(path)
+    return sorted(paths)
+
+
 def completion_result(number, text):
     """Trust straxer's availability check and locate output by run number only."""
     if log_has_error(text):
         return None
     if ALREADY_AVAILABLE_MARKER in text:
-        run_id = f"{int(number):06d}"
         # The listener and straxer may use different containers. Do not infer
         # targets or lineage from the listener's context or the state table.
         for folder_name, status in (("destination_folder", MOVED), ("base_folder", COMPLETED)):
             folder = core.config["context"][folder_name]
-            paths = glob.iglob(os.path.join(glob.escape(folder), f"{run_id}-*"))
-            if any(os.path.isdir(path) and not path.endswith("_temp") for path in paths):
+            paths = run_output_folders(folder, number)
+            if folder_name == "base_folder":
+                paths += run_output_folders(os.path.join(folder, "strax_data"), number)
+            if paths:
                 return status, f"Data already available; run output found in {folder_name}"
         return ALREADY_AVAILABLE, (
             "Straxer reports data already available; no local output found; "
