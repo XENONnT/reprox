@@ -44,6 +44,7 @@ setuptools.setup(name='reprox',
                           'bin/reprox-move-folders',
                           'bin/reprox-online-processing',
                           'bin/reprox-online-validation',
+                          'bin/reprox-online-oom-retry',
                           'bin/reprox-reprocess',
                           'bin/reprox-start-jobs'],
                  classifiers=[

@@ -92,6 +92,24 @@ PYTHONPATH=. python -u -m reprox.online_validation \
   --max-runs-per-cycle 1
 ```
 
+## Retry Slurm OOM failures
+
+Run `reprox-online-oom-retry`, or the module below, alongside processing and
+validation to retry confirmed Slurm out-of-memory failures with bounded memory
+increases. Export the detector configuration before importing reprox:
+
+```bash
+export REPROX_CONFIG="$PWD/reprox/reprocessing_sr3_online.ini"
+PYTHONPATH=. python -u -m reprox.online_oom_retry \
+  --repo . --config "$REPROX_CONFIG" \
+  --submit --poll-seconds 60 --max-submit-per-cycle 1
+```
+
+The default memory tiers are 32 and 48 GiB, with at most two automatic retries
+per run. Existing listeners track and validate accepted jobs. Omitting
+`--submit` previews candidates; add `--once` for a single check. See
+[OOM retry policy, journal and recovery](docs/online_oom_retry.md).
+
 ## Online processing Q&A
 
 ### How do I process TPC, neutron-veto, and muon-veto data for the same run?
